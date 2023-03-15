@@ -11,62 +11,59 @@ def decode(gif: typing.BinaryIO) -> Gif:
     return gif_object
 
 
-def get_bits(byte, start, end=None):
-    """given byte, returns the bits at the specified locations"""
+def get_bits(byte, start, end=None) -> int:
+    """given byte, returns the int representation of the bits at the specified locations including start and end"""
     raise NotImplemented
 
 
-def read_header(gif: typing.BinaryIO, gif_object: Gif):
+def decode_header(gif: typing.BinaryIO, gif_object: Gif) -> None:
     """reads the header of the file"""
-    gif.version = gif.read(6)
+    gif_object.version = gif.read(6)
 
 
-def read_LSD(gif: typing.BinaryIO, gif_object: Gif):
+def decode_logical_screen_descriptor(gif: typing.BinaryIO, gif_object: Gif) -> None:
     """reads logical screen descriptor"""
     block = gif.read(7)
-    LSD = {}
-    packed = {}
+
     gif_object.width = block[0:1]
     gif_object.height = block[2:3]
-    packedBytes = block[4]
-    gif_object.GCT
-    packed['GCTFlag'] = get_bits(packedBytes, 0)
-    packed['colorResolution'] = get_bits(packedBytes, 1, 3)
-    packed['sortFlag'] = get_bits(packedBytes, 4)
-    packed['sizeOfGCT'] = get_bits(packedBytes, 5, 7)
-    LSD['packed'] = packed
-    LSD['backgroundColor'] = block[5]
-    LSD['pixelAspectRatio'] = block[6]
-    gif_object["LSD"] = LSD
+
+    packed_bytes = block[4]
+
+    global_color_table_exist = get_bits(packed_bytes, 0)
+    if global_color_table_exist:
+        gif_object.global_color_table_size = get_bits(packed_bytes, 5, 7)
+
+    gif_object.resolution = get_bits(packed_bytes, 1, 3)
 
 
-def read_GCT(gif: typing.BinaryIO, gif_object: Gif):
+def decode_global_color_table(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_Application_Extension(gif: typing.BinaryIO, gif_object: Gif):
+def decode_application_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_Graphic_Control_Extension(gif: typing.BinaryIO, gif_object: Gif):
+def decode_graphic_control_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def image_descriptor(gif: typing.BinaryIO, gif_object: Gif):
+def decode_image_descriptor(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_local_color_table(gif: typing.BinaryIO, gif_object: Gif):
+def decode_local_color_table(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_image_data(gif: typing.BinaryIO, gif_object: Gif):
+def decode_image_data(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_comment_extension(gif: typing.BinaryIO, gif_object: Gif):
+def decode_comment_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented
 
 
-def read_plain_text(gif: typing.BinaryIO, gif_object: Gif):
+def decode_plain_text(gif: typing.BinaryIO, gif_object: Gif) -> None:
     raise NotImplemented

@@ -4,13 +4,13 @@ class Gif:
         self._width = None
         self._height = None
         self._resolution = None
-        self._GCT_size = None
-        self._GCT = None
+        self._global_color_table_size = None
+        self._global_color_table = None
         self._images = []
-        self._comments_ex = []
-        self._applications_ex = []
-        self._GCEs = []
-        self._LCTs = []
+        self._comments_extensions = []
+        self._applications_extensions = []
+        self._graphic_control_extensions = []
+        self._local_color_tables = []
 
     @property
     def version(self):
@@ -45,20 +45,20 @@ class Gif:
         self._resolution = value
 
     @property
-    def GCT_size(self):
-        return self._GCT_size
+    def global_color_table_size(self):
+        return self._global_color_table_size
 
-    @GCT_size.setter
-    def GCT_size(self, value):
-        self._GCT_size = value
+    @global_color_table_size.setter
+    def global_color_table_size(self, value):
+        self._global_color_table_size = value
 
     @property
-    def GCT(self):
-        return self._GCT
+    def global_color_table(self):
+        return self._global_color_table
 
-    @GCT.setter
-    def GCT(self, value):
-        self._GCT = value
+    @global_color_table.setter
+    def global_color_table(self, value):
+        self._global_color_table = value
 
     @property
     def images(self):
@@ -70,35 +70,35 @@ class Gif:
 
     @property
     def comments_ex(self):
-        return self._comments_ex
+        return self._comments_extensions
 
     @comments_ex.setter
     def comments_ex(self, value):
-        self._comments_ex = value
+        self._comments_extensions = value
 
     @property
     def applications_ex(self):
-        return self._applications_ex
+        return self._applications_extensions
 
     @applications_ex.setter
     def applications_ex(self, value):
-        self._applications_ex = value
+        self._applications_extensions = value
 
     @property
-    def GCEs(self):
-        return self._GCEs
+    def graphic_control_extensions(self):
+        return self._graphic_control_extensions
 
-    @GCEs.setter
-    def GCEs(self, value):
-        self._GCEs = value
+    @graphic_control_extensions.setter
+    def graphic_control_extensions(self, value):
+        self._graphic_control_extensions = value
 
     @property
-    def LCTs(self):
-        return self._LCTs
+    def local_color_tables(self):
+        return self._local_color_tables
 
-    @LCTs.setter
-    def LCTs(self, value):
-        self._LCTs = value
+    @local_color_tables.setter
+    def local_color_tables(self, value):
+        self._local_color_tables = value
 
 
 class Application_extension:
@@ -273,9 +273,9 @@ class Image:
         self._width = None
         self._height = None
         self._interlace_flag = None
-        self._GCE_index = None
+        self._graphic_control_extension_index = None
         self._image_data = []
-        self._LCT_index = None
+        self._local_color_table_index = None
         self._plain_text_extension_index = None
 
     @property
@@ -319,12 +319,12 @@ class Image:
         self._interlace_flag = value
 
     @property
-    def GCE_index(self):
-        return self._GCE_index
+    def graphic_control_extension_index(self):
+        return self._graphic_control_extension_index
 
-    @GCE_index.setter
-    def GCE_index(self, value):
-        self._GCE_index = value
+    @graphic_control_extension_index.setter
+    def graphic_control_extension_index(self, value):
+        self._graphic_control_extension_index = value
 
     @property
     def image_data(self):
@@ -335,12 +335,12 @@ class Image:
         self._image_data = value
 
     @property
-    def LCT_index(self):
-        return self._LCT_index
+    def local_color_table_index(self):
+        return self._local_color_table_index
 
-    @LCT_index.setter
-    def LCT_index(self, value):
-        self._LCT_index = value
+    @local_color_table_index.setter
+    def local_color_table_index(self, value):
+        self._local_color_table_index = value
 
     @property
     def plain_text_extension_index(self):
