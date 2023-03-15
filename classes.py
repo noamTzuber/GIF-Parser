@@ -101,7 +101,7 @@ class Gif:
         self._local_color_tables = value
 
 
-class Application_extension:
+class ApplicationExtension:
     def __init__(self):
         self._application_name = None
         self._identify = None
@@ -132,7 +132,7 @@ class Application_extension:
         self._data = info
 
 
-class Graphic_control_extension:
+class GraphicControlExtension:
     def __init__(self):
         self._disposal = None
         self._user_input_flag = None
@@ -181,7 +181,7 @@ class Graphic_control_extension:
         self._GCT_size = value
 
 
-class Plain_text_extension:
+class PlainTextExtension:
     def __init__(self):
         self._top = None
         self._left = None
