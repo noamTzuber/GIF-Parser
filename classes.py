@@ -10,6 +10,7 @@ class Gif:
         self._comments_ex = []
         self._applications_ex = []
         self._GCEs = []
+        # we don't use a global one every image look for the last table
         self._LCTs = []
 
     @property
@@ -275,7 +276,8 @@ class Image:
         self._interlace_flag = None
         self._GCE_index = None
         self._image_data = []
-        self._local_color_table_index = None
+        # we think we dont need it
+        # self._local_color_table_index = None
         self._plain_text_extension_index = None
 
     @property

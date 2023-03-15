@@ -1,6 +1,9 @@
+import math
+
 from bitstring import ConstBitStream
 
 import classes
+from lzw import decode
 
 
 def read_gif(filename: str):
@@ -72,7 +75,22 @@ def read_local_color_table(file, gif):
 
 
 def read_image_data(file, gif):
-    pass
+    bytes_image_data = b''
+    current_image = gif.images[-1]
+
+    lzw_minimum_code_size = file.read(1)
+    index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
+
+    while number_of_sub_block_bytes := file.read(1) != b'\x00':
+        compressed_sub_block = file.read(number_of_sub_block_bytes)
+        bytes_image_data += decode(compressed_sub_block, 4)
+
+    local_color_table = gif.LCTs[-1]
+
+    pos = 0
+    for i in range(int(len(bytes_image_data)/index_length)):
+        current_image.image_data.append(local_color_table[bytes_image_data[pos:pos+index_length]])
+        pos += index_length
 
 
 def read_comment_extension(file, gif):
