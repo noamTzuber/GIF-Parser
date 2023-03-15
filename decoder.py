@@ -1,3 +1,5 @@
+from bitstring import ConstBitStream
+
 import classes
 
 
@@ -44,7 +46,25 @@ def read_Graphic_Control_Extension(file, gif):
 
 
 def image_descriptor(file, gif):
-    pass
+    # before getting in we create image and add it to the gif anf the gif will send to this function
+    # and add the last gce to this image
+
+    current_image = gif.images[-1]
+
+    current_image.left = file.read(2)
+    current_image.top = file.read(2)
+    current_image.width = file.read(2)
+    current_image.height = file.read(2)
+
+    stream = ConstBitStream(file.read(1))
+
+    current_image.local_color_table_flag = stream.read('bin1')
+    current_image.interlace_flag = stream.read('bin1')
+
+    # those attributes are not necessary for the gif
+    # sort_flag = stream.read('bin1')
+    # reserved_for_future_use = stream.read('bin2')
+    # size_of_local_color_table = stream.read('bin3')
 
 
 def read_local_color_table(file, gif):
