@@ -1,101 +1,89 @@
-import math
-
-from bitstring import ConstBitStream
-
-import classes
-from lzw import decode
+import typing
+from classes import Gif
 
 
-def read_gif(filename: str):
-    pass
+def decode(gif: typing.BinaryIO) -> Gif:
+    """decodes the file using support functions below"""
+    gif_object = Gif()
+    # TODO: add decode logic
+    decode_header(gif, gif_object)
+    decode_logical_screen_descriptor(gif, gif_object)
+    return gif_object
 
 
-def get_bits(byte, start, end=None):
-    pass
+def int_to_bits(num: int) -> str:
+    """given byte, returns the int representation of the bits at the specified locations including start"""
+    return bin(num).removeprefix('0b')
 
 
-def read_header(file, gif):
-    gif.version = file.read(6)
+def bits_to_int(bits: str, start: int, amount: int = 1) -> int:
+    """given byte, returns the int representation of the bits at the specified locations including start"""
+    end: int = start + amount
+    return int(bits[start:end], 2)
 
 
-def read_LSD(file, gif):
-    block = file.read(7)
-    LSD = {}
-    packed = {}
-    gif.width = block[0:1]
-    gif.height = block[2:3]
-    packedBytes = block[4]
-    gif.GCT
-    packed['GCTFlag'] = get_bits(packedBytes, 0)
-    packed['colorResolution'] = get_bits(packedBytes, 1, 3)
-    packed['sortFlag'] = get_bits(packedBytes, 4)
-    packed['sizeOfGCT'] = get_bits(packedBytes, 5, 7)
-    LSD['packed'] = packed
-    LSD['backgroundColor'] = block[5]
-    LSD['pixelAspectRatio'] = block[6]
-    gif["LSD"] = LSD
+def bytes_to_int(block: bytes, start: int = 0, amount: int = 1) -> int:
+    """given bytes, returns the int representation of the bytes"""
+    end: int = start + amount
+    return int.from_bytes(block[start:end], "little", signed=False)
 
 
-def read_GCT(file, gif):
-    pass
+def single_byte(block: bytes, index: int) -> bytes:
+    """given bytes, returns the int representation of the bytes"""
+    end: int = index + 1
+    return block[index:end]
 
 
-def read_Application_Extension(file, gif):
-    pass
+def decode_header(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    """reads the header of the file"""
+    block = gif.read(6)
+    gif_object.version = block.decode()
 
 
-def read_Graphic_Control_Extension(file, gif):
-    pass
+def decode_logical_screen_descriptor(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    """reads logical screen descriptor"""
+    block: bytes = gif.read(7)
+
+    gif_object.width = bytes_to_int(block, start=0, amount=2)
+    gif_object.height = bytes_to_int(block, start=2, amount=2)
+
+    packed_int: int = block[4]
+    packed_bits: str = int_to_bits(packed_int)
+
+    global_color_table_exist = bits_to_int(packed_bits, 0)
+    if global_color_table_exist:
+        gif_object.global_color_table_size = bits_to_int(packed_bits, 5, 7)
+
+    gif_object.resolution = bits_to_int(packed_bits, 1, 3)
 
 
-def image_descriptor(file, gif):
-    # before getting in we create image and add it to the gif anf the gif will send to this function
-    # and add the last gce to this image
-
-    current_image = gif.images[-1]
-
-    current_image.left = file.read(2)
-    current_image.top = file.read(2)
-    current_image.width = file.read(2)
-    current_image.height = file.read(2)
-
-    stream = ConstBitStream(file.read(1))
-
-    current_image.local_color_table_flag = stream.read('bin1')
-    current_image.interlace_flag = stream.read('bin1')
-
-    # those attributes are not necessary for the gif
-    # sort_flag = stream.read('bin1')
-    # reserved_for_future_use = stream.read('bin2')
-    # size_of_local_color_table = stream.read('bin3')
+def decode_global_color_table(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
 
 
-def read_local_color_table(file, gif):
-    pass
+def decode_application_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
 
 
-def read_image_data(file, gif):
-    bytes_image_data = b''
-    current_image = gif.images[-1]
-
-    lzw_minimum_code_size = file.read(1)
-    index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
-
-    while number_of_sub_block_bytes := file.read(1) != b'\x00':
-        compressed_sub_block = file.read(number_of_sub_block_bytes)
-        bytes_image_data += decode(compressed_sub_block, 4)
-
-    local_color_table = gif.LCTs[-1]
-
-    pos = 0
-    for i in range(int(len(bytes_image_data)/index_length)):
-        current_image.image_data.append(local_color_table[bytes_image_data[pos:pos+index_length]])
-        pos += index_length
+def decode_graphic_control_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
 
 
-def read_comment_extension(file, gif):
-    pass
+def decode_image_descriptor(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
 
 
-def read_plain_text(file, gif):
-    pass
+def decode_local_color_table(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
+
+
+def decode_image_data(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
+
+
+def decode_comment_extension(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
+
+
+def decode_plain_text(gif: typing.BinaryIO, gif_object: Gif) -> None:
+    raise NotImplemented
