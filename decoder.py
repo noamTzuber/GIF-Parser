@@ -84,10 +84,10 @@ def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> Non
 
     current_image = gif_object.images[-1]
 
-    current_image.left = gif_stream.read(2)
-    current_image.top = gif_stream.read(2)
-    current_image.width = gif_stream.read(2)
-    current_image.height = gif_stream.read(2)
+    current_image.left = int.from_bytes(gif_stream.read(2), "big")
+    current_image.top = int.from_bytes(gif_stream.read(2), "big")
+    current_image.width = int.from_bytes(gif_stream.read(2), "big")
+    current_image.height = int.from_bytes(gif_stream.read(2), "big")
 
     stream = ConstBitStream(gif_stream.read(1))
 
@@ -108,21 +108,21 @@ def decode_local_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> No
 def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode image data"""
     bytes_image_data = b''
-    current_image = gif_object.images[-1]
+    # current_image = gif_object.images[-1]
 
-    lzw_minimum_code_size = gif_stream.read(1)
+    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1),"big")
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
-    while number_of_sub_block_bytes := gif_stream.read(1) != b'\x00':
-        compressed_sub_block = gif_stream.read(number_of_sub_block_bytes)
-        bytes_image_data += decode_lzw(compressed_sub_block, 4)
+    while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
+        compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "big"))).hex()
+        bytes_image_data += decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
 
-    local_color_table = gif_object.LCTs[-1]
+    # local_color_table = gif_object.LCTs[-1]
 
-    pos = 0
-    for i in range(int(len(bytes_image_data) / index_length)):
-        current_image.image_data.append(local_color_table[bytes_image_data[pos:pos + index_length]])
-        pos += index_length
+    # pos = 0
+    # for i in range(int(len(bytes_image_data) / index_length)):
+    #     current_image.image_data.append(local_color_table[bytes_image_data[pos:pos + index_length]])
+    #     pos += index_length
 
 
 def decode_comment_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
