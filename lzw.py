@@ -2,6 +2,7 @@ import math
 
 from bitstring import ConstBitStream
 
+
 # the example we using here:
 #       https://giflib.sourceforge.net/whatsinagif/bits_and_bytes.html
 #       https://giflib.sourceforge.net/whatsinagif/lzw_image_data.html
@@ -208,7 +209,7 @@ def update_code_size1(table_size, code_size):
     return code_size
 
 
-def decode(compressed_data, color_table_size):
+def decode_lzw(compressed_data, color_table_size):
     """
     using lzw algorithm for compress data ang gif images
     the table code look like this:
@@ -270,13 +271,10 @@ def decode(compressed_data, color_table_size):
 
 
 if __name__ == '__main__':
-
     # Open the file in binary mode -  after the data compressed
     input_bytes = '0x24929248924A492249292489200092248002492400049490001252491249492449252491249'
     print("0x{:x}".format(int(encode(input_bytes, 4), 2)))
 
     # the output will be the indexes of the colors in color table in this example the index's length will be 3
     # therefore, we expect to see:"001 001 001 001 001 010 010 010 ..." equivalent to 1,1,1,1,1,2,2,2..
-    print(decode(bytes('0x8c2d99872a1cdc33a00275ec95faa8de608c04914c01', 'utf-8'), 4))
-
-
+    print(decode_lzw(bytes('0x8c2d99872a1cdc33a00275ec95faa8de608c04914c01', 'utf-8'), 4))
