@@ -224,7 +224,7 @@ def decode(compressed_data, color_table_size):
     """
     writing_size = math.ceil(math.log(color_table_size + 1)) + 1
     reading_size = writing_size
-    table = initialize_code_table(color_table_size, True)
+    table = initialize_code_table(int(color_table_size), True)
     reading_size = update_code_size1(len(table), reading_size)
 
     # add the start of reading

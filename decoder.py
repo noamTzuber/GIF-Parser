@@ -54,10 +54,10 @@ def image_descriptor(file, gif):
 
     current_image = gif.images[-1]
 
-    current_image.left = file.read(2)
-    current_image.top = file.read(2)
-    current_image.width = file.read(2)
-    current_image.height = file.read(2)
+    current_image.left = int.from_bytes(file.read(2), "big")
+    current_image.top = int.from_bytes(file.read(2), "big")
+    current_image.width = int.from_bytes(file.read(2), "big")
+    current_image.height = int.from_bytes(file.read(2), "big")
 
     stream = ConstBitStream(file.read(1))
 
@@ -76,21 +76,21 @@ def read_local_color_table(file, gif):
 
 def read_image_data(file, gif):
     bytes_image_data = b''
-    current_image = gif.images[-1]
+    # current_image = gif.images[-1]
 
-    lzw_minimum_code_size = file.read(1)
+    lzw_minimum_code_size = int.from_bytes(file.read(1),"big")
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
-    while number_of_sub_block_bytes := file.read(1) != b'\x00':
-        compressed_sub_block = file.read(number_of_sub_block_bytes)
-        bytes_image_data += decode(compressed_sub_block, 4)
+    while (number_of_sub_block_bytes := file.read(1)) != b'\x00':
+        compressed_sub_block = (file.read(int.from_bytes(number_of_sub_block_bytes, "big"))).hex()
+        bytes_image_data += decode(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
 
-    local_color_table = gif.LCTs[-1]
+    # local_color_table = gif.LCTs[-1]
 
-    pos = 0
-    for i in range(int(len(bytes_image_data)/index_length)):
-        current_image.image_data.append(local_color_table[bytes_image_data[pos:pos+index_length]])
-        pos += index_length
+    # pos = 0
+    # for i in range(int(len(bytes_image_data)/index_length)):
+    #     current_image.image_data.append(local_color_table[bytes_image_data[pos:pos+index_length]])
+    #     pos += index_length
 
 
 def read_comment_extension(file, gif):
