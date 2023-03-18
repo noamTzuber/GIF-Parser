@@ -1,4 +1,7 @@
 import typing
+
+from bitstring import ConstBitStream
+
 from classes import Gif
 
 
@@ -70,7 +73,25 @@ def decode_graphic_control_extension(gif: typing.BinaryIO, gif_object: Gif) -> N
 
 
 def decode_image_descriptor(gif: typing.BinaryIO, gif_object: Gif) -> None:
-    raise NotImplemented
+    # before getting in we create image and add it to the gif anf the gif will send to this function
+    # and add the last gce to this image
+
+    current_image = gif_object.images[-1]
+
+    current_image.left = gif.read(2)
+    current_image.top = gif.read(2)
+    current_image.width = gif.read(2)
+    current_image.height = gif.read(2)
+
+    stream = ConstBitStream(gif.read(1))
+
+    current_image.local_color_table_flag = stream.read('bin1')
+    current_image.interlace_flag = stream.read('bin1')
+
+    # those attributes are not necessary for the gif
+    # sort_flag = stream.read('bin1')
+    # reserved_for_future_use = stream.read('bin2')
+    # size_of_local_color_table = stream.read('bin3')
 
 
 def decode_local_color_table(gif: typing.BinaryIO, gif_object: Gif) -> None:
