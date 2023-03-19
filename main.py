@@ -16,8 +16,8 @@ if __name__ == '__main__':
     gif = classes.Gif()
     with open("example.gif", "rb") as file:
         # testing for read image data
-        file.read(43)
-        decode_image_data(file, gif)
+        # file.read(43)
+        # decode_image_data(file, gif)
 
         # testing for image descriptor
         # file.read(34)

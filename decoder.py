@@ -84,10 +84,10 @@ def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> Non
 
     current_image = gif_object.images[-1]
 
-    current_image.left = int.from_bytes(gif_stream.read(2), "big")
-    current_image.top = int.from_bytes(gif_stream.read(2), "big")
-    current_image.width = int.from_bytes(gif_stream.read(2), "big")
-    current_image.height = int.from_bytes(gif_stream.read(2), "big")
+    current_image.left = int.from_bytes(gif_stream.read(2), "little")
+    current_image.top = int.from_bytes(gif_stream.read(2), "little")
+    current_image.width = int.from_bytes(gif_stream.read(2), "little")
+    current_image.height = int.from_bytes(gif_stream.read(2), "little")
 
     stream = ConstBitStream(gif_stream.read(1))
 
@@ -111,11 +111,11 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     bytes_image_data = b''
     # current_image = gif_object.images[-1]
 
-    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1),"big")
+    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1),"little")
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
     while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
-        compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "big"))).hex()
+        compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little"))).hex()
         bytes_image_data += decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
 
     # local_color_table = gif_object.LCTs[-1]
