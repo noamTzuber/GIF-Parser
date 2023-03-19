@@ -95,9 +95,10 @@ def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> Non
     current_image.interlace_flag = stream.read('bin1')
 
     # those attributes are not necessary for the gif
-    # sort_flag = stream.read('bin1')
-    # reserved_for_future_use = stream.read('bin2')
-    # size_of_local_color_table = stream.read('bin3')
+    current_image.sort_flag = int.from_bytes(stream.read('bin1'), "little")
+    # we don't need it - reading just for moving the pos forward
+    reserved_for_future_use = stream.read('bin2')
+    current_image.size_of_local_color_table = int.from_bytes(stream.read('bin3'), "little")
 
 
 def decode_local_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
