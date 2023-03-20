@@ -13,6 +13,7 @@ def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
     # TODO: add decode logic
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
+    decode_global_color_table(gif_stream, gif_object)
     return gif_object
 
 
@@ -71,15 +72,19 @@ def decode_logical_screen_descriptor(gif_stream: typing.BinaryIO, gif_object: Gi
 
     global_color_table_exist = bits_to_int(packed_bits, 0)
     if global_color_table_exist:
-        gif_object.global_color_table_size = bits_to_int(packed_bits, 5, 7)
+        gif_object.global_color_table_size = 3 * pow(2, bits_to_int(packed_bits, 5, 7) + 1)
 
     gif_object.resolution = bits_to_int(packed_bits, 1, 3)
 
 
 def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode global color table"""
-    raise NotImplemented
-
+    """
+    Decode global color table.
+    We read the number of bytes we received in the flag in Logical Screen Descriptor,
+    and divided into triplets of bytes pairs, each triplet representing RGB of a color.
+    """
+    gif_object.global_color_table = [gif_stream.read(3) for i in range(
+        int(gif_object.global_color_table_size / 3))]
 
 def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode global color table"""
