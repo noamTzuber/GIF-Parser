@@ -14,7 +14,7 @@ def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
     decode_global_color_table(gif_stream, gif_object)
-    # decode_graphic_control_extension(gif_stream, gif_object)
+    decode_graphic_control_extension(gif_stream, gif_object)
     return gif_object
 
 
@@ -23,7 +23,12 @@ def int_to_bits(num: int) -> str:
     given int, returns the bits representation of the int as string without prefix
     example: int_to_bits(11) = '1011'
     """
-    return bin(num).removeprefix('0b')
+    # return bin(num).removeprefix('0b')
+    # Convert to binary string and remove prefix "0b"
+    binary_str = bin(num)[2:]
+
+    # Pad with zeros to ensure at least 3 bits
+    return '{0:0>8}'.format(binary_str)
 
 
 def bits_to_int(bits: str, start: int = 0, size: int = 1) -> int:
