@@ -3,7 +3,7 @@ import typing
 
 from bitstring import ConstBitStream
 
-from gif_objects import Gif
+from gif_objects import Gif, GraphicControlExtension
 from lzw import decode_lzw
 
 
@@ -14,6 +14,7 @@ def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
     decode_global_color_table(gif_stream, gif_object)
+    # decode_graphic_control_extension(gif_stream, gif_object)
     return gif_object
 
 
@@ -86,6 +87,7 @@ def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> N
     gif_object.global_color_table = [gif_stream.read(3) for i in range(
         int(gif_object.global_color_table_size / 3))]
 
+
 def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode global color table"""
     raise NotImplemented
@@ -93,7 +95,23 @@ def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -
 
 def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode graphic control extension"""
-    raise NotImplemented
+
+    # Create new Graphic Control Extensions and append it to the list in the Gif object.
+    gif_object.graphic_control_extensions.append(GraphicControlExtension())
+    block: bytes = gif_stream.read(7)
+
+    """ Only until we create the structure in the main function that downloads the primitives of the extensions,
+    we remove it manually """
+    block: bytes = b'!\x00\x00\x00\x00'
+    packed_int: int = block[1]
+    packed_bits: str = int_to_bits(packed_int)
+
+    # Get the flags from the packed bits.
+    gif_object.graphic_control_extensions[-1].disposal = bits_to_int(packed_bits, 3, 3)
+    gif_object.graphic_control_extensions[-1].user_input_flag = bits_to_int(packed_bits, 6, 1)
+
+    gif_object.graphic_control_extensions[-1].delay_time = bytes_to_int(block, start=2, size=2)
+    gif_object.graphic_control_extensions[-1].transparent_flag = bytes_to_int(block, start=4, size=1)
 
 
 def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -130,7 +148,7 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     bytes_image_data = b''
     # current_image = gif_object.images[-1]
 
-    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1),"little")
+    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1), "little")
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
     while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':

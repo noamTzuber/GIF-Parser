@@ -139,7 +139,6 @@ class GraphicControlExtension:
         self._user_input_flag = None
         self._transparent_flag = None
         self._delay_time = None
-        self._global_color_table_size = None
 
     @property
     def disposal(self):
@@ -172,14 +171,6 @@ class GraphicControlExtension:
     @delay_time.setter
     def delay_time(self, value):
         self._delay_time = value
-
-    @property
-    def global_color_table_size(self):
-        return self._global_color_table_size
-
-    @global_color_table_size.setter
-    def global_color_table_size(self, value):
-        self._global_color_table_size = value
 
 
 class PlainTextExtension:
