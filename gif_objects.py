@@ -10,7 +10,8 @@ class Gif:
         self._comments_extension = []
         self._applications_extensions = []
         self._graphic_control_extensions = []
-        # we don't use a global one every image look for the last table
+        # we don't use a global one, every image look for the last table
+        # the l_c_t will saved in array of RGB's
         self._local_color_tables = []
 
     @property
