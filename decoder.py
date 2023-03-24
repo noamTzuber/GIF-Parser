@@ -3,18 +3,55 @@ import typing
 
 from bitstring import ConstBitStream
 
-from gif_objects import Gif, GraphicControlExtension
+from gif_objects import Gif, GraphicControlExtension, Image
 from lzw import decode_lzw
 
 
 def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
     """decodes the file using support functions below"""
     gif_object = Gif()
-    # TODO: add decode logic
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
-    decode_global_color_table(gif_stream, gif_object)
-    decode_graphic_control_extension(gif_stream, gif_object)
+
+    # There is no global color table if the size is 0.
+    if gif_object.global_color_table_size != 0:
+        decode_global_color_table(gif_stream, gif_object)
+
+    while True:
+
+        # Read the first byte to check if the next block is extension or image descriptor.
+        extensionIntroducer = gif_stream.read(1)
+
+        if extensionIntroducer == b'\x21':
+
+            # Check which type of extension is the next block.
+            extensionLabel = gif_stream.read(1)
+
+            if extensionLabel == b'\xFF':
+                decode_application_extension(gif_stream, gif_object)
+
+            elif extensionLabel == b'\xF9':
+                decode_graphic_control_extension(gif_stream, gif_object)
+
+            elif extensionLabel == b'\xFE':
+                decode_comment_extension(gif_stream, gif_object)
+
+            elif extensionLabel == b'\x01':
+                decode_plain_text(gif_stream, gif_object)
+
+        elif extensionIntroducer == b'\x2C':
+
+            # Creat a new Image object and add it to the end of the image array in the Gif.
+            gif_object.images.append(Image())
+            decode_image_descriptor(gif_stream, gif_object)
+
+            # Check if there is a Local color table for this image.
+            if gif_object.images[-1].local_color_table_index is not None:
+                decode_local_color_table(gif_stream, gif_object)
+
+            decode_image_data(gif_stream, gif_object)
+        else:
+            break
     return gif_object
 
 
@@ -27,7 +64,7 @@ def int_to_bits(num: int) -> str:
     # Convert to binary string and remove prefix "0b"
     binary_str = bin(num)[2:]
 
-    # Pad with zeros to ensure at least 3 bits
+    # Pad with zeros to ensure at least 8 bits
     return '{0:0>8}'.format(binary_str)
 
 
@@ -80,7 +117,7 @@ def decode_logical_screen_descriptor(gif_stream: typing.BinaryIO, gif_object: Gi
     if global_color_table_exist:
         gif_object.global_color_table_size = 3 * pow(2, bits_to_int(packed_bits, 5, 7) + 1)
 
-    gif_object.resolution = bits_to_int(packed_bits, 1, 3)
+    gif_object.resolution = bits_to_int(packed_bits, 1, 3)  
 
 
 def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -103,11 +140,11 @@ def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gi
 
     # Create new Graphic Control Extensions and append it to the list in the Gif object.
     gif_object.graphic_control_extensions.append(GraphicControlExtension())
-    block: bytes = gif_stream.read(7)
+    block: bytes = gif_stream.read(6)
 
     """ Only until we create the structure in the main function that downloads the primitives of the extensions,
     we remove it manually """
-    block: bytes = b'!\x00\x00\x00\x00'
+    # block: bytes = b'!\x00\x00\x00\x00'
     packed_int: int = block[1]
     packed_bits: str = int_to_bits(packed_int)
 
