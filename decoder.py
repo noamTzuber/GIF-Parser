@@ -142,9 +142,6 @@ def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gi
     gif_object.graphic_control_extensions.append(GraphicControlExtension())
     block: bytes = gif_stream.read(6)
 
-    """ Only until we create the structure in the main function that downloads the primitives of the extensions,
-    we remove it manually """
-    # block: bytes = b'!\x00\x00\x00\x00'
     packed_int: int = block[1]
     packed_bits: str = int_to_bits(packed_int)
 
