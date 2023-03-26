@@ -1,6 +1,7 @@
 import math
 import typing
 
+from PIL import Image as Image_creator
 from bitstring import ConstBitStream
 
 from gif_objects import Gif, GraphicControlExtension, Image
@@ -46,7 +47,7 @@ def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
-            if gif_object.images[-1].local_color_table_index is not None:
+            if gif_object.images[-1].local_color_table_flag == 1:
                 decode_local_color_table(gif_stream, gif_object)
 
             decode_image_data(gif_stream, gif_object)
@@ -171,24 +172,25 @@ def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> Non
     current_image.interlace_flag = stream.read('bin1')
 
     # those attributes are not necessary for the gif
-    current_image.sort_flag = int.from_bytes(stream.read('bin1'), "little")
+    current_image.sort_flag = int(stream.read('bin1'), 2)
     # we don't need it - reading just for moving the pos forward
-    reserved_for_future_use = stream.read('bin2')
-    current_image.size_of_local_color_table = int.from_bytes(stream.read('bin3'), "little")
+    reserved_for_future_use = int(stream.read('bin2'), 2)
+    current_image.size_of_local_color_table = int(stream.read('bin3'), 2)
 
 
 def decode_local_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    # current_image = gif_object.images[-1]
-    # size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
-    size_of_color_table = 4
+    current_image = gif_object.images[-1]
+    size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
 
     colors_array = [gif_stream.read(3) for i in range(int(size_of_color_table))]
+    gif_object.local_color_tables.append(colors_array)
+    current_image.local_color_table_index = len(gif_object.local_color_tables) - 1
 
 
 def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode image data"""
     bytes_image_data = b''
-    # current_image = gif_object.images[-1]
+    current_image = gif_object.images[-1]
 
     lzw_minimum_code_size = int.from_bytes(gif_stream.read(1), "little")
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
@@ -198,12 +200,34 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
         compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little"))).hex()
         bytes_image_data += decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
 
-    # local_color_table = gif_object.LCTs[-1]
+    if current_image.local_color_table_flag == 1:
+        local_color_table = gif_object.local_color_tables[-1]
+    else:
+        local_color_table = gif_object.global_color_table
 
-    # pos = 0
-    # for i in range(int(len(bytes_image_data) / index_length)):
-    #     current_image.image_data.append(local_color_table[bytes_image_data[pos:pos + index_length]])
-    #     pos += index_length
+    pos = 0
+    for i in range(int(len(bytes_image_data) / index_length)):
+        current_index = int((bytes_image_data[pos:pos + index_length]), 2)
+        # save the index
+        current_image.image_indexes.append(current_index)
+        # convert index to rgb
+        current_image.image_data.append(local_color_table[current_index])
+
+        pos += index_length
+
+    current_image.img = create_img(current_image.image_data, current_image.width, current_image.height)
+
+
+def create_img(image_data: list[str], width: int, height: int):
+    # Create a new image with the specified size
+    img = Image_creator.new('RGB', (width, height))
+
+    # Set the pixel values of the image using the RGB array
+    pixels = img.load()
+    for x in range(width):
+        for y in range(height):
+            pixels[x, y] = tuple(int(image_data[y * width + x][i:i + 2], 16) for i in (1, 3, 5))
+
 
 
 def decode_comment_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:

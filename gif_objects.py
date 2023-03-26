@@ -1,3 +1,5 @@
+from PIL import Image
+
 
 class Gif:
     def __init__(self):
@@ -266,9 +268,11 @@ class Image:
         self._interlace_flag: int = None
         self._graphic_control_extension_index: int = None
         self._image_data = []
+        self._image_indexes = []
         # we think we dont need it
         self._local_color_table_index: int = None
         self._plain_text_extension_index: int = None
+        self._img = None
 
     @property
     def top(self) -> int:
@@ -327,6 +331,14 @@ class Image:
         self._image_data = value
 
     @property
+    def image_indexes(self):
+        return self._image_indexes
+
+    @image_indexes.setter
+    def image_indexes(self, value):
+        self._image_indexes = value
+
+    @property
     def local_color_table_index(self) -> int:
         return self._local_color_table_index
 
@@ -341,3 +353,11 @@ class Image:
     @plain_text_extension_index.setter
     def plain_text_extension_index(self, value: int):
         self._plain_text_extension_index = value
+
+    @property
+    def img(self) -> int:
+        return self._top
+
+    @top.img
+    def img(self, value: Image):
+        self._img = value
