@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image as Image_PIL
 
 
 class Gif:
@@ -355,9 +355,9 @@ class Image:
         self._plain_text_extension_index = value
 
     @property
-    def img(self) -> int:
-        return self._top
+    def img(self) -> Image_PIL:
+        return self._img
 
-    @top.img
-    def img(self, value: Image):
+    @img.setter
+    def img(self, value: Image_PIL):
         self._img = value

@@ -1,7 +1,8 @@
+import binascii
 import math
 import typing
 
-from PIL import Image as Image_creator
+from PIL import Image as Image_PIL
 from bitstring import ConstBitStream
 
 from gif_objects import Gif, GraphicControlExtension, Image
@@ -196,7 +197,6 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
     while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
-        """check the number of the reading bytes"""
         compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little"))).hex()
         bytes_image_data += decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
 
@@ -216,16 +216,21 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     current_image.img = create_img(current_image.image_data, current_image.width, current_image.height)
 
 
-def create_img(image_data: list[str], width: int, height: int):
+def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
+
     # Create a new image with the specified size
-    img = Image_creator.new('RGB', (width, height))
+    img = Image_PIL.new('RGB', (width, height))
+
+    rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
 
     # Set the pixel values of the image using the RGB array
     pixels = img.load()
-    for x in range(width):
-        for y in range(height):
-            pixels[x, y] = tuple(int(image_data[y * width + x][i:i + 2], 16) for i in (1, 3, 5))
-
+    # for each pixel - we take specific color ("#FF0000") and diveide it to 3 parts("FF","00","00") of RGB.
+    # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
+    for i in range(width):
+        for j in range(height):
+            pixels[i, j] = tuple(int(rgb_array[j * width + i][k:k + 2], 16) for k in (1, 3, 5))
+    return img
 
 
 def decode_comment_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
