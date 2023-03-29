@@ -205,15 +205,13 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     else:
         local_color_table = gif_object.global_color_table
 
-    pos = 0
-    for i in range(int(len(bytes_image_data) / index_length)):
+    for pos in range(0, len(bytes_image_data), index_length):
         current_index = int((bytes_image_data[pos:pos + index_length]), 2)
         # save the index
         current_image.image_indexes.append(current_index)
         # convert index to rgb
         current_image.image_data.append(local_color_table[current_index])
 
-        pos += index_length
 
     current_image.img = create_img(current_image.image_data, current_image.width, current_image.height)
 
