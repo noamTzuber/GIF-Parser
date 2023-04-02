@@ -6,6 +6,7 @@ from bitstring import ConstBitStream
 # the example we using here:
 #       https://giflib.sourceforge.net/whatsinagif/bits_and_bytes.html
 #       https://giflib.sourceforge.net/whatsinagif/lzw_image_data.html
+# Check
 
 def write_compressed_data(result: [str], code_size: int):
     output = ""
