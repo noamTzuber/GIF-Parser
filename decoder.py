@@ -10,7 +10,7 @@ from lzw import decode_lzw
 
 
 def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
-    """decodes the file using support functions below"""
+    """decodes the file using support functions belows"""
     gif_object = Gif()
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
