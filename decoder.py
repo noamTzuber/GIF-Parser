@@ -3,7 +3,7 @@ import typing
 
 from bitstring import ConstBitStream
 
-from gif_objects import Gif, GraphicControlExtension, Image
+from gif_objects import Gif, GraphicControlExtension, Image, PlainTextExtension
 from lzw import decode_lzw
 
 
@@ -34,9 +34,12 @@ def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
                 decode_graphic_control_extension(gif_stream, gif_object)
 
             elif extensionLabel == b'\xFE':
+                # We decided that we do not refer to this extension,
+                # the function exists if we want to use it in the future, we need to add a suitable object.
                 decode_comment_extension(gif_stream, gif_object)
 
             elif extensionLabel == b'\x01':
+                gif_object.images.append(PlainTextExtension())
                 decode_plain_text(gif_stream, gif_object)
 
         elif extensionIntroducer == b'\x2C':
@@ -117,7 +120,7 @@ def decode_logical_screen_descriptor(gif_stream: typing.BinaryIO, gif_object: Gi
     if global_color_table_exist:
         gif_object.global_color_table_size = 3 * pow(2, bits_to_int(packed_bits, 5, 7) + 1)
 
-    gif_object.resolution = bits_to_int(packed_bits, 1, 3)  
+    gif_object.resolution = bits_to_int(packed_bits, 1, 3)
 
 
 def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -206,11 +209,37 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     #     pos += index_length
 
 
-def decode_comment_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_comment_extension(gif_stream: ConstBitStream, gif_object: Gif) -> None:
     """decode comment extension"""
-    raise NotImplemented
+    data = ''
+    # every sub block start with a bye that present the size of it.
+    sub_block_size = ConstBitStream.read("uint:8")
+    while sub_block_size != 0:  # Change to Block Terminator enum
+        size_in_bits = 8 * sub_block_size
+        data += ConstBitStream.read(f"uintle:{size_in_bits}")
+        sub_block_size = ConstBitStream.read("uint:8")
 
 
 def decode_plain_text(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode plain text"""
-    raise NotImplemented
+
+    # Read the block size (always 12)
+    ConstBitStream.read("uint:8")
+    Gif.plain_text_extensions[-1].left = ConstBitStream.read("uintle:16")
+    Gif.plain_text_extensions[-1].top = ConstBitStream.read("uintle:16")
+    Gif.plain_text_extensions[-1].width = ConstBitStream.read("uintle:16")
+    Gif.plain_text_extensions[-1].height = ConstBitStream.read("uintle:16")
+    Gif.plain_text_extensions[-1].char_width = ConstBitStream.read("uint:8")
+    Gif.plain_text_extensions[-1].char_height = ConstBitStream.read("uint:8")
+    Gif.plain_text_extensions[-1].text_color = ConstBitStream.read("uint:8")
+    Gif.plain_text_extensions[-1].background_color = ConstBitStream.read("uint:8")
+
+    data = ''
+    # every data sub block start with a bye that present the size of it.
+    sub_block_size = ConstBitStream.read("uint:8")
+    while sub_block_size != 0:  # Change to Block Terminator enum
+        size_in_bits = 8 * sub_block_size
+        data += ConstBitStream.read(f"uintle:{size_in_bits}")
+        sub_block_size = ConstBitStream.read("uint:8")
+
+    Gif.plain_text_extensions[-1].text_data = data
