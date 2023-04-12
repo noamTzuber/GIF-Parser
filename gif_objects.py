@@ -86,6 +86,9 @@ class Gif:
     def applications_extension(self, value):
         self._applications_extensions = value
 
+    def add_application_extension(self, extension):
+        self._applications_extensions.append(extension)
+
     @property
     def graphic_control_extensions(self):
         return self._graphic_control_extensions

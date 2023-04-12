@@ -97,7 +97,20 @@ def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> N
 
 def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
     """decode global color table"""
-    raise NotImplemented
+    app_ex = ApplicationExtension()
+
+    block_size = int.from_bytes(gif_stream.read(1), "little")
+
+    app_ex.application_name = gif_stream.read(8).decode("utf-8")
+    app_ex.identify = gif_stream.read(3).decode("utf-8")
+
+    application_data = ""
+    while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
+        sub_block = gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little")).decode("utf-8")
+        application_data +=sub_block
+
+    app_ex.information = application_data
+    gif_object.add_application_extension(app_ex)
 
 
 def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -161,7 +174,8 @@ def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
 
     while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
         compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little"))).hex()
-        bytes_image_data += decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
+        res = decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
+        bytes_image_data += res
 
     if current_image.local_color_table_flag == 1:
         local_color_table = gif_object.local_color_tables[-1]
@@ -191,6 +205,7 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     for i in range(width):
         for j in range(height):
             pixels[i, j] = tuple(int(rgb_array[j * width + i][k:k + 2], 16) for k in (1, 3, 5))
+    img.show()
     return img
 
 
