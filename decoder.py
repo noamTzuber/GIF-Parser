@@ -3,59 +3,62 @@ import math
 import typing
 
 from PIL import Image as Image_PIL
-from bitstring import ConstBitStream
+import bitstring
 
+from bitstream import BitStream
 from enums import BlockPrefix
-from gif_objects import Gif, GraphicControlExtension, Image
+from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension
 from lzw import decode_lzw
 from utils import bytes_to_int, int_to_bits, bits_to_int
 
 
-def decode_gif(gif_stream: typing.BinaryIO) -> Gif:
+def decode_gif(io: typing.BinaryIO) -> Gif:
     """decodes the file using support functions below"""
-    gif_object = Gif()
-    decode_header(gif_stream, gif_object)
-    decode_logical_screen_descriptor(gif_stream, gif_object)
+    gif_object: Gif = Gif()
+    gif_stream: BitStream = BitStream(bitstring.ConstBitStream(io))
+
+    decode_header(io, gif_object)
+    decode_logical_screen_descriptor(io, gif_object)
 
     # There is no global color table if the size is 0.
     if gif_object.global_color_table_size != 0:
-        decode_global_color_table(gif_stream, gif_object)
+        decode_global_color_table(io, gif_object)
 
     while True:
 
         # Read the first byte to check if the next block is extension or image descriptor.
-        extension_introducer = gif_stream.read(1)
+        extension_introducer: bytes = io.read(1)
         prefix = BlockPrefix(extension_introducer)
 
         if prefix is BlockPrefix.Extension:
 
             # Check which type of extension is the next block.
-            extension_label = gif_stream.read(1)
+            extension_label: bytes = io.read(1)
             prefix = BlockPrefix(extension_label)
 
             if prefix is BlockPrefix.ApplicationExtension:
-                decode_application_extension(gif_stream, gif_object)
+                decode_application_extension(io, gif_object)
 
             elif prefix is BlockPrefix.GraphicControlExtension:
-                decode_graphic_control_extension(gif_stream, gif_object)
+                decode_graphic_control_extension(io, gif_object)
 
             elif prefix is BlockPrefix.CommentExtension:
-                decode_comment_extension(gif_stream, gif_object)
+                decode_comment_extension(io, gif_object)
 
             elif prefix is BlockPrefix.PlainTextExtension:
-                decode_plain_text(gif_stream, gif_object)
+                decode_plain_text(io, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
 
             # Creat a new Image object and add it to the end of the image array in the Gif.
             gif_object.images.append(Image())
-            decode_image_descriptor(gif_stream, gif_object)
+            decode_image_descriptor(io, gif_object)
 
             # Check if there is a Local color table for this image.
             if gif_object.images[-1].local_color_table_flag == 1:
-                decode_local_color_table(gif_stream, gif_object)
+                decode_local_color_table(io, gif_object)
 
-            decode_image_data(gif_stream, gif_object)
+            decode_image_data(io, gif_object)
         elif prefix is BlockPrefix.NONE:
             break
 
@@ -107,7 +110,7 @@ def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -
     application_data = ""
     while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
         sub_block = gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little")).decode("utf-8")
-        application_data +=sub_block
+        application_data += sub_block
 
     app_ex.information = application_data
     gif_object.add_application_extension(app_ex)
@@ -143,7 +146,7 @@ def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> Non
     current_image.width = int.from_bytes(gif_stream.read(2), "little")
     current_image.height = int.from_bytes(gif_stream.read(2), "little")
 
-    stream = ConstBitStream(gif_stream.read(1))
+    stream = bitstring.ConstBitStream(gif_stream.read(1))
 
     current_image.local_color_table_flag = stream.read('bin1')
     current_image.interlace_flag = stream.read('bin1')
@@ -200,12 +203,18 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
 
     # Set the pixel values of the image using the RGB array
     pixels = img.load()
+
     # for each pixel - we take specific color ("#FF0000") and diveide it to 3 parts("FF","00","00") of RGB.
     # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
-    for i in range(width):
-        for j in range(height):
-            pixels[i, j] = tuple(int(rgb_array[j * width + i][k:k + 2], 16) for k in (1, 3, 5))
-    img.show()
+    # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
+    # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
+    # and stores them as a tuple of three integers
+    for row in range(width):
+        for column in range(height):
+            hex_color = rgb_array[column * width + row]
+            r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+            pixels[row, column] = (r, g, b)
+
     return img
 
 

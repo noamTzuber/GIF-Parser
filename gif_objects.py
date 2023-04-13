@@ -1,3 +1,6 @@
+import typing
+from dataclasses import dataclass
+
 from PIL import Image as Image_PIL
 
 
