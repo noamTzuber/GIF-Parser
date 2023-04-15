@@ -17,8 +17,8 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
     gif_object: Gif = Gif()
     gif_stream: BitStream = BitStream(bitstring.ConstBitStream(io))
 
-    decode_header(io, gif_object)
-    decode_logical_screen_descriptor(io, gif_object)
+    decode_header(gif_stream, gif_object)
+    decode_logical_screen_descriptor(gif_stream, gif_object)
 
     # There is no global color table if the size is 0.
     if gif_object.global_color_table_size != 0:
@@ -65,27 +65,31 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
     return gif_object
 
 
-def decode_header(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode the header of the file"""
-    block = gif_stream.read(6)
+def decode_header(gif_stream: BitStream, gif_object: Gif) -> None:
+    block = gif_stream.read_bytes(6)
     gif_object.version = block.decode()
 
 
-def decode_logical_screen_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode logical screen descriptor"""
-    block: bytes = gif_stream.read(7)
+def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
+    gif_object.width = gif_stream.read_unsigned_integer(2, 'bytes')
+    gif_object.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
-    gif_object.width = bytes_to_int(block, start=0, size=2)
-    gif_object.height = bytes_to_int(block, start=2, size=2)
+    global_color_table_exist = gif_stream.read_bool()
 
-    packed_int: int = block[4]
-    packed_bits: str = int_to_bits(packed_int)
+    gif_object.resolution = gif_stream.read_unsigned_integer(3, 'bits')
 
-    global_color_table_exist = bits_to_int(packed_bits, 0)
+    is_ordered = gif_stream.read_bool()
+
+    global_color_table_size_value = gif_stream.read_unsigned_integer(3, 'bits')
     if global_color_table_exist:
-        gif_object.global_color_table_size = 3 * pow(2, bits_to_int(packed_bits, 5, 7) + 1)
+        gif_object.global_color_table_size = 3 * pow(2, global_color_table_size_value + 1)
+    else:
+        gif_object.global_color_table_size = 0
 
-    gif_object.resolution = bits_to_int(packed_bits, 1, 3)
+    transperent_index = gif_stream.read_unsigned_integer(1, 'bytes')
+
+    pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
+    pixel_ratio = (pixel_ratio_value + 15) / 64
 
 
 def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
