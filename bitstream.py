@@ -8,6 +8,10 @@ class BitStream:
         super().__init__()
         self.stream = stream
 
+    # TODO: remove this function after integration
+    def read(self, n):
+        return self.read_bytes(n)
+
     def read_bytes(self, n_bytes: int) -> bytes:
         return self.stream.read(f"bytes:{n_bytes}")
 
@@ -24,5 +28,27 @@ class BitStream:
             return self.stream.read(f"uint:{n}")
         elif unit == "bytes":
             return self.stream.read(f"uintle:{n * 8}")
+        else:
+            raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")
+
+    def read_hex(self, n: int, unit: Literal['bits', 'bytes']) -> str:
+        """
+
+        """
+        if unit == "bits":
+            return self.stream.read(f"hex:{n}")
+        elif unit == "bytes":
+            return self.stream.read(f"hex:{n * 8}")
+        else:
+            raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")
+
+    def skip(self, n: int, unit: Literal['bits', 'bytes']) -> None:
+        """
+
+        """
+        if unit == "bits":
+            self.stream.read(f"pad:{n}")
+        elif unit == "bytes":
+            self.stream.read(f"pad:{n * 8}")
         else:
             raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")

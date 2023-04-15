@@ -22,43 +22,43 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
     # There is no global color table if the size is 0.
     if gif_object.global_color_table_size != 0:
-        decode_global_color_table(io, gif_object)
+        decode_global_color_table(gif_stream, gif_object)
 
     while True:
 
         # Read the first byte to check if the next block is extension or image descriptor.
-        extension_introducer: bytes = io.read(1)
+        extension_introducer: bytes = gif_stream.read(1)
         prefix = BlockPrefix(extension_introducer)
 
         if prefix is BlockPrefix.Extension:
 
             # Check which type of extension is the next block.
-            extension_label: bytes = io.read(1)
+            extension_label: bytes = gif_stream.read(1)
             prefix = BlockPrefix(extension_label)
 
             if prefix is BlockPrefix.ApplicationExtension:
-                decode_application_extension(io, gif_object)
+                decode_application_extension(gif_stream, gif_object)
 
             elif prefix is BlockPrefix.GraphicControlExtension:
-                decode_graphic_control_extension(io, gif_object)
+                decode_graphic_control_extension(gif_stream, gif_object)
 
             elif prefix is BlockPrefix.CommentExtension:
-                decode_comment_extension(io, gif_object)
+                decode_comment_extension(gif_stream, gif_object)
 
             elif prefix is BlockPrefix.PlainTextExtension:
-                decode_plain_text(io, gif_object)
+                decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
 
             # Creat a new Image object and add it to the end of the image array in the Gif.
             gif_object.images.append(Image())
-            decode_image_descriptor(io, gif_object)
+            decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
             if gif_object.images[-1].local_color_table_flag == 1:
-                decode_local_color_table(io, gif_object)
+                decode_local_color_table(gif_stream, gif_object)
 
-            decode_image_data(io, gif_object)
+            decode_image_data(gif_stream, gif_object)
         elif prefix is BlockPrefix.NONE:
             break
 
@@ -102,22 +102,27 @@ def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> N
         int(gif_object.global_color_table_size / 3))]
 
 
-def decode_application_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode global color table"""
+def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     app_ex = ApplicationExtension()
 
-    block_size = int.from_bytes(gif_stream.read(1), "little")
+    block_size = gif_stream.read_unsigned_integer(1, 'bytes')
+    if block_size != 12:
+        raise Exception("incorrect file format")
 
-    app_ex.application_name = gif_stream.read(8).decode("utf-8")
-    app_ex.identify = gif_stream.read(3).decode("utf-8")
+    app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
+    app_ex.identify = gif_stream.read_bytes(3).decode("utf-8")
 
     application_data = ""
-    while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
-        sub_block = gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little")).decode("utf-8")
+    while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
+        sub_block = gif_stream.read_bytes(number_of_sub_block_bytes).decode("utf-8")
         application_data += sub_block
 
     app_ex.information = application_data
     gif_object.add_application_extension(app_ex)
+
+    block_terminator = gif_stream.read_bytes(1)
+    if block_terminator != '\x00':
+        raise Exception("incorrect file format")
 
 
 def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -138,53 +143,51 @@ def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gi
     gif_object.graphic_control_extensions[-1].transparent_flag = bytes_to_int(block, start=4, size=1)
 
 
-def decode_image_descriptor(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode image descriptor"""
+def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     # before getting in we create image and add it to the gif anf the gif will send to this function
     # and add the last gce to this image
 
     current_image = gif_object.images[-1]
 
-    current_image.left = int.from_bytes(gif_stream.read(2), "little")
-    current_image.top = int.from_bytes(gif_stream.read(2), "little")
-    current_image.width = int.from_bytes(gif_stream.read(2), "little")
-    current_image.height = int.from_bytes(gif_stream.read(2), "little")
+    current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
+    current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
+    current_image.width = gif_stream.read_unsigned_integer(2, 'bytes')
+    current_image.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
-    stream = bitstring.ConstBitStream(gif_stream.read(1))
-
-    current_image.local_color_table_flag = stream.read('bin1')
-    current_image.interlace_flag = stream.read('bin1')
+    current_image.local_color_table_flag = gif_stream.read_bool()
+    current_image.interlace_flag = gif_stream.read_bool()
 
     # those attributes are not necessary for the gif
-    current_image.sort_flag = int(stream.read('bin1'), 2)
-    # we don't need it - reading just for moving the pos forward
-    reserved_for_future_use = int(stream.read('bin2'), 2)
-    current_image.size_of_local_color_table = int(stream.read('bin3'), 2)
+    current_image.sort_flag = gif_stream.read_bool()
+
+    # skipping 2 bits
+    gif_stream.skip(2, 'bits')
+
+    current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
 
 
-def decode_local_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image = gif_object.images[-1]
     size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
 
-    colors_array = [gif_stream.read(3) for i in range(int(size_of_color_table))]
+    colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
     current_image.local_color_table_index = len(gif_object.local_color_tables) - 1
 
 
-def decode_image_data(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
-    """decode image data"""
-    bytes_image_data = b''
+def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image = gif_object.images[-1]
 
-    lzw_minimum_code_size = int.from_bytes(gif_stream.read(1), "little")
+    lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
-    while (number_of_sub_block_bytes := gif_stream.read(1)) != b'\x00':
-        compressed_sub_block = (gif_stream.read(int.from_bytes(number_of_sub_block_bytes, "little"))).hex()
+    bytes_image_data = b''
+    while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
+        compressed_sub_block = gif_stream.read_hex(number_of_sub_block_bytes, 'bytes')
         res = decode_lzw(compressed_sub_block, math.pow(2, lzw_minimum_code_size))
         bytes_image_data += res
 
-    if current_image.local_color_table_flag == 1:
+    if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[-1]
     else:
         local_color_table = gif_object.global_color_table
@@ -208,7 +211,7 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     # Set the pixel values of the image using the RGB array
     pixels = img.load()
 
-    # for each pixel - we take specific color ("#FF0000") and diveide it to 3 parts("FF","00","00") of RGB.
+    # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
     # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
     # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
     # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
