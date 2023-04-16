@@ -107,7 +107,8 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
     if block_size != 12:
-        raise Exception("incorrect file format")
+        # raise Exception("incorrect file format")
+        pass
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
     app_ex.identify = gif_stream.read_bytes(3).decode("utf-8")
@@ -122,7 +123,8 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     block_terminator = gif_stream.read_bytes(1)
     if block_terminator != '\x00':
-        raise Exception("incorrect file format")
+        # raise Exception("incorrect file format")
+        pass
 
 
 def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
@@ -193,7 +195,7 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
         local_color_table = gif_object.global_color_table
 
     for pos in range(0, len(bytes_image_data), index_length):
-        current_index = int((bytes_image_data[pos:pos + index_length]), 2)
+        current_index = int(bytes_image_data[pos:pos + index_length], 2)
         # save the index
         current_image.image_indexes.append(current_index)
         # convert index to rgb
@@ -203,9 +205,10 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
 
 
 def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
+    # can be replaced with ""
+    Image_PIL.frombytes('RGB', (width, height), b''.join(image_data)).show()
     # Create a new image with the specified size
     img = Image_PIL.new('RGB', (width, height))
-
     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
 
     # Set the pixel values of the image using the RGB array
