@@ -213,33 +213,33 @@ def decode_comment_extension(gif_stream: ConstBitStream, gif_object: Gif) -> Non
     """decode comment extension"""
     data = ''
     # every sub block start with a bye that present the size of it.
-    sub_block_size = ConstBitStream.read("uint:8")
+    sub_block_size = gif_stream.read("uint:8")
     while sub_block_size != 0:  # Change to Block Terminator enum
         size_in_bits = 8 * sub_block_size
-        data += ConstBitStream.read(f"uintle:{size_in_bits}")
-        sub_block_size = ConstBitStream.read("uint:8")
+        data += gif_stream.read(f"uintle:{size_in_bits}")
+        sub_block_size = gif_stream.read("uint:8")
 
 
-def decode_plain_text(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_plain_text(gif_stream: ConstBitStream, gif_object: Gif) -> None:
     """decode plain text"""
 
     # Read the block size (always 12)
-    ConstBitStream.read("uint:8")
-    Gif.plain_text_extensions[-1].left = ConstBitStream.read("uintle:16")
-    Gif.plain_text_extensions[-1].top = ConstBitStream.read("uintle:16")
-    Gif.plain_text_extensions[-1].width = ConstBitStream.read("uintle:16")
-    Gif.plain_text_extensions[-1].height = ConstBitStream.read("uintle:16")
-    Gif.plain_text_extensions[-1].char_width = ConstBitStream.read("uint:8")
-    Gif.plain_text_extensions[-1].char_height = ConstBitStream.read("uint:8")
-    Gif.plain_text_extensions[-1].text_color = ConstBitStream.read("uint:8")
-    Gif.plain_text_extensions[-1].background_color = ConstBitStream.read("uint:8")
+    gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].left = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].top = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].width = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].height = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].char_width = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].char_height = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].text_color = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].background_color = gif_stream.read("uint:8")
 
     data = ''
     # every data sub block start with a bye that present the size of it.
-    sub_block_size = ConstBitStream.read("uint:8")
+    sub_block_size = gif_stream.read("uint:8")
     while sub_block_size != 0:  # Change to Block Terminator enum
         size_in_bits = 8 * sub_block_size
-        data += ConstBitStream.read(f"uintle:{size_in_bits}")
-        sub_block_size = ConstBitStream.read("uint:8")
+        data += gif_stream.read(f"uintle:{size_in_bits}")
+        sub_block_size = gif_stream.read("uint:8")
 
-    Gif.plain_text_extensions[-1].text_data = data
+    gif_object.plain_text_extensions[-1].text_data = data
