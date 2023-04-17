@@ -15,6 +15,7 @@ class Gif:
         self._images: list[Image] = []
         self._applications_extensions: list[ApplicationExtension] = []
         self._graphic_control_extensions: list[GraphicControlExtension] = []
+        self._plain_text_extensions: list[PlainTextExtension] = []
         self._local_color_tables = []
 
     @property
@@ -80,6 +81,14 @@ class Gif:
     @comments_extension.setter
     def comments_extension(self, value):
         self._comments_extension = value
+
+    @property
+    def plain_text_extensions(self):
+        return self._plain_text_extensions
+
+    @plain_text_extensions.setter
+    def plain_text_extensions(self, value):
+        self._plain_text_extensions = value
 
     @property
     def applications_extension(self):

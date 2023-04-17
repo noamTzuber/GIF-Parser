@@ -228,11 +228,37 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     return img
 
 
-def decode_comment_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_comment_extension(gif_stream: ConstBitStream, gif_object: Gif) -> None:
     """decode comment extension"""
-    raise NotImplemented
+    data = ''
+    # every sub block start with a bye that present the size of it.
+    sub_block_size = gif_stream.read("uint:8")
+    while sub_block_size != 0:  # Change to Block Terminator enum
+        size_in_bits = 8 * sub_block_size
+        data += gif_stream.read(f"uintle:{size_in_bits}")
+        sub_block_size = gif_stream.read("uint:8")
 
 
-def decode_plain_text(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_plain_text(gif_stream: ConstBitStream, gif_object: Gif) -> None:
     """decode plain text"""
-    raise NotImplemented
+
+    # Read the block size (always 12)
+    gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].left = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].top = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].width = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].height = gif_stream.read("uintle:16")
+    gif_object.plain_text_extensions[-1].char_width = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].char_height = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].text_color = gif_stream.read("uint:8")
+    gif_object.plain_text_extensions[-1].background_color = gif_stream.read("uint:8")
+
+    data = ''
+    # every data sub block start with a bye that present the size of it.
+    sub_block_size = gif_stream.read("uint:8")
+    while sub_block_size != 0:  # Change to Block Terminator enum
+        size_in_bits = 8 * sub_block_size
+        data += gif_stream.read(f"uintle:{size_in_bits}")
+        sub_block_size = gif_stream.read("uint:8")
+
+    gif_object.plain_text_extensions[-1].text_data = data
