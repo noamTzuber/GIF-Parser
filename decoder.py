@@ -2,8 +2,8 @@ import binascii
 import math
 import typing
 
-import bitstring
 from PIL import Image as Image_PIL
+import bitstring
 
 from bitstream import BitStream
 from enums import BlockPrefix
@@ -13,7 +13,6 @@ from utils import bytes_to_int, int_to_bits, bits_to_int
 
 
 def decode_gif(io: typing.BinaryIO) -> Gif:
-    """decodes the file using support functions below"""
     gif_object: Gif = Gif()
     gif_stream: BitStream = BitStream(bitstring.ConstBitStream(io))
 
@@ -55,7 +54,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
-            if gif_object.images[-1].local_color_table_flag == 1:
+            if gif_object.images[-1].local_color_table_flag:
                 decode_local_color_table(gif_stream, gif_object)
 
             decode_image_data(gif_stream, gif_object)
@@ -98,7 +97,7 @@ def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
     We read the number of bytes we received in the flag in Logical Screen Descriptor,
     and divided into triplets of bytes pairs, each triplet representing RGB of a color.
     """
-    gif_object.global_color_table = [gif_stream.read_bytes(3) for i in range(
+    gif_object.global_color_table = [gif_stream.read_bytes(3) for _ in range(
         int(gif_object.global_color_table_size))]
 
 
@@ -106,7 +105,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     app_ex = ApplicationExtension()
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    if block_size != 12:
+    if block_size != 11:
         # raise Exception("incorrect file format")
         pass
 
@@ -121,10 +120,6 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     app_ex.information = application_data
     gif_object.add_application_extension(app_ex)
 
-    block_terminator = gif_stream.read_bytes(1)
-    if block_terminator != '\x00':
-        # raise Exception("incorrect file format")
-        pass
 
 
 def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -208,7 +203,7 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
 
 def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     # can be replaced with ""
-    Image_PIL.frombytes('RGB', (width, height), b''.join(image_data)).show()
+    #Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
     # Create a new image with the specified size
     img = Image_PIL.new('RGB', (width, height))
     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
@@ -241,8 +236,6 @@ def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
 
 
 def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
-    """decode plain text"""
-
     plain_text_ex = PlainTextExtension()
 
     # Read the block size (always 12)
