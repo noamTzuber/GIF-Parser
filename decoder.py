@@ -7,7 +7,8 @@ import bitstring
 
 from bitstream import BitStream
 from enums import BlockPrefix
-from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension
+from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
+    IncorrectFileFormat
 from lzw import decode_lzw
 from utils import bytes_to_int, int_to_bits, bits_to_int
 
@@ -106,8 +107,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
     if block_size != 11:
-        # raise Exception("incorrect file format")
-        pass
+        raise IncorrectFileFormat(f'application extension block size should be 11 not {block_size}')
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
     app_ex.identify = gif_stream.read_bytes(3).decode("utf-8")
