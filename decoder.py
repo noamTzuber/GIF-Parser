@@ -2,15 +2,14 @@ import binascii
 import math
 import typing
 
-from PIL import Image as Image_PIL
 import bitstring
+from PIL import Image as Image_PIL
 
 from bitstream import BitStream
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
     IncorrectFileFormat
 from lzw import decode_lzw
-from utils import bytes_to_int, int_to_bits, bits_to_int
 
 
 def decode_gif(io: typing.BinaryIO) -> Gif:
@@ -49,9 +48,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
-
-            # Creat a new Image object and add it to the end of the image array in the Gif.
-            gif_object.images.append(Image())
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
@@ -66,8 +62,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
 
 def decode_header(gif_stream: BitStream, gif_object: Gif) -> None:
-    block = gif_stream.read_bytes(6)
-    gif_object.version = block.decode()
+    gif_object.version = gif_stream.read_decoded(6)
 
 
 def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -122,8 +117,6 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
 
 def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
-    """decode graphic control extension"""
-
     graphic_control_ex = GraphicControlExtension()
 
     # always 4 bytes
@@ -142,10 +135,7 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
-    # before getting in we create image and add it to the gif anf the gif will send to this function
-    # and add the last gce to this image
-
-    current_image = gif_object.images[-1]
+    current_image: Image = Image()
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -162,6 +152,8 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     gif_stream.skip(2, 'bits')
 
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
+
+    gif_object.images.append(current_image)
 
 
 def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
