@@ -76,8 +76,8 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
 
     global_color_table_exist = gif_stream.read_bool()
 
-    gif_object.resolution = gif_stream.read_unsigned_integer(3, 'bits')
-
+    # both not relevant
+    resolution = gif_stream.read_unsigned_integer(3, 'bits')
     is_ordered = gif_stream.read_bool()
 
     global_color_table_size_value = gif_stream.read_unsigned_integer(3, 'bits')
@@ -86,7 +86,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     else:
         gif_object.global_color_table_size = 0
 
-    transperent_index = gif_stream.read_unsigned_integer(1, 'bytes')
+    gif_object.background_color_index = gif_stream.read_unsigned_integer(1, 'bytes')
 
     pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
     pixel_ratio = (pixel_ratio_value + 15) / 64
@@ -119,7 +119,6 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     app_ex.data = application_data
     gif_object.add_application_extension(app_ex)
-
 
 
 def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -203,7 +202,7 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
 
 def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     # can be replaced with ""
-    #Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
+    # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
     # Create a new image with the specified size
     img = Image_PIL.new('RGB', (width, height))
     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]

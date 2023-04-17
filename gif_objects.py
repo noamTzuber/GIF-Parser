@@ -41,6 +41,7 @@ class Image:
     interlace_flag: int = None
     local_color_table_flag: bool = False
     graphic_control_extension_index: int = None
+    background_color_index: int = None
     image_data = []
     image_indexes = []
     # we think we don't need it
@@ -54,7 +55,6 @@ class Gif:
     version: str = None
     width: int = None
     height: int = None
-    resolution: int = None
     global_color_table_size: int = None
     global_color_table: Image_PIL = None
     images: list[Image] = field(default_factory=list)
