@@ -132,7 +132,7 @@ def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gi
 
     # Create new Graphic Control Extensions and append it to the list in the Gif object.
     gif_object.graphic_control_extensions.append(GraphicControlExtension())
-    block: bytes = gif_stream.read(6)
+    block: bytes = gif_stream.read_unsigned_integer(6, 'bits')
 
     packed_int: int = block[1]
     packed_bits: str = int_to_bits(packed_int)
@@ -228,18 +228,17 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     return img
 
 
-def decode_comment_extension(gif_stream: ConstBitStream, gif_object: Gif) -> None:
+def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode comment extension"""
-    data = ''
+    data = 'b'
     # every sub block start with a bye that present the size of it.
-    sub_block_size = gif_stream.read("uint:8")
+    sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
-        size_in_bits = 8 * sub_block_size
-        data += gif_stream.read(f"uintle:{size_in_bits}")
-        sub_block_size = gif_stream.read("uint:8")
+        data += gif_stream.read_bytes(sub_block_size)
+        sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
 
-def decode_plain_text(gif_stream: ConstBitStream, gif_object: Gif) -> None:
+def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode plain text"""
 
     # Read the block size (always 12)
