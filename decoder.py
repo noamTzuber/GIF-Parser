@@ -2,12 +2,12 @@ import binascii
 import math
 import typing
 
-from PIL import Image as Image_PIL
 import bitstring
+from PIL import Image as Image_PIL
 
 from bitstream import BitStream
 from enums import BlockPrefix
-from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension
+from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension
 from lzw import decode_lzw
 from utils import bytes_to_int, int_to_bits, bits_to_int
 
@@ -82,7 +82,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
 
     global_color_table_size_value = gif_stream.read_unsigned_integer(3, 'bits')
     if global_color_table_exist:
-        gif_object.global_color_table_size = 3 * pow(2, global_color_table_size_value + 1)
+        gif_object.global_color_table_size = pow(2, global_color_table_size_value + 1)
     else:
         gif_object.global_color_table_size = 0
 
@@ -98,8 +98,8 @@ def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> N
     We read the number of bytes we received in the flag in Logical Screen Descriptor,
     and divided into triplets of bytes pairs, each triplet representing RGB of a color.
     """
-    gif_object.global_color_table = [gif_stream.read(3) for i in range(
-        int(gif_object.global_color_table_size / 3))]
+    gif_object.global_color_table = [gif_stream.read_unsigned_integer(1, 'bits') for i in range(
+        int(gif_object.global_color_table_size))]
 
 
 def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -127,22 +127,24 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
         pass
 
 
-def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode graphic control extension"""
 
-    # Create new Graphic Control Extensions and append it to the list in the Gif object.
-    gif_object.graphic_control_extensions.append(GraphicControlExtension())
-    block: bytes = gif_stream.read(6)
+    graphic_control_ex = GraphicControlExtension()
 
-    packed_int: int = block[1]
-    packed_bits: str = int_to_bits(packed_int)
+    # always 4 bytes
+    block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
-    # Get the flags from the packed bits.
-    gif_object.graphic_control_extensions[-1].disposal = bits_to_int(packed_bits, 3, 3)
-    gif_object.graphic_control_extensions[-1].user_input_flag = bits_to_int(packed_bits, 6, 1)
+    # flags from Packed Fields
+    reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.user_input_flag = gif_stream.read_unsigned_integer(1, "bits")
+    transparent_color_flag = gif_stream.read_unsigned_integer(1, "bits")
 
-    gif_object.graphic_control_extensions[-1].delay_time = bytes_to_int(block, start=2, size=2)
-    gif_object.graphic_control_extensions[-1].transparent_flag = bytes_to_int(block, start=4, size=1)
+    graphic_control_ex.delay_time = gif_stream.read_unsigned_integer(2, "bytes")
+    graphic_control_ex.transparent_flag = gif_stream.read_unsigned_integer(1, "bytes")
+
+    gif_object.graphic_control_extensions.append(graphic_control_ex)
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -228,37 +230,39 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
     return img
 
 
-def decode_comment_extension(gif_stream: ConstBitStream, gif_object: Gif) -> None:
+def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode comment extension"""
-    data = ''
+    data = 'b'
     # every sub block start with a bye that present the size of it.
-    sub_block_size = gif_stream.read("uint:8")
+    sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
-        size_in_bits = 8 * sub_block_size
-        data += gif_stream.read(f"uintle:{size_in_bits}")
-        sub_block_size = gif_stream.read("uint:8")
+        data += gif_stream.read_bytes(sub_block_size)
+        sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
 
-def decode_plain_text(gif_stream: ConstBitStream, gif_object: Gif) -> None:
+def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode plain text"""
 
+    plain_text_ex = PlainTextExtension()
+
     # Read the block size (always 12)
-    gif_stream.read("uint:8")
-    gif_object.plain_text_extensions[-1].left = gif_stream.read("uintle:16")
-    gif_object.plain_text_extensions[-1].top = gif_stream.read("uintle:16")
-    gif_object.plain_text_extensions[-1].width = gif_stream.read("uintle:16")
-    gif_object.plain_text_extensions[-1].height = gif_stream.read("uintle:16")
-    gif_object.plain_text_extensions[-1].char_width = gif_stream.read("uint:8")
-    gif_object.plain_text_extensions[-1].char_height = gif_stream.read("uint:8")
-    gif_object.plain_text_extensions[-1].text_color = gif_stream.read("uint:8")
-    gif_object.plain_text_extensions[-1].background_color = gif_stream.read("uint:8")
 
-    data = ''
+    block_size = gif_stream.read_unsigned_integer(1, "bytes")
+    plain_text_ex.left = gif_stream.read_unsigned_integer(2, "bytes")
+    plain_text_ex.top = gif_stream.read_unsigned_integer(2, "bytes")
+    plain_text_ex.width = gif_stream.read_unsigned_integer(2, "bytes")
+    plain_text_ex.height = gif_stream.read_unsigned_integer(2, "bytes")
+    plain_text_ex.char_width = gif_stream.read_unsigned_integer(1, "bytes")
+    plain_text_ex.char_height = gif_stream.read_unsigned_integer(1, "bytes")
+    plain_text_ex.text_color = gif_stream.read_unsigned_integer(1, "bytes")
+    plain_text_ex.background_color = gif_stream.read_unsigned_integer(1, "bytes")
+
+    data = 'b'
     # every data sub block start with a bye that present the size of it.
-    sub_block_size = gif_stream.read("uint:8")
+    sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
-        size_in_bits = 8 * sub_block_size
-        data += gif_stream.read(f"uintle:{size_in_bits}")
-        sub_block_size = gif_stream.read("uint:8")
+        data += gif_stream.read_bytes(sub_block_size)
+        sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
-    gif_object.plain_text_extensions[-1].text_data = data
+    plain_text_ex.text_data = data
+    gif_object.plain_text_extensions.append(plain_text_ex)
