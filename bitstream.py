@@ -8,12 +8,11 @@ class BitStream:
         super().__init__()
         self.stream = stream
 
-    # TODO: remove this function after integration
-    def read(self, n):
-        return self.read_bytes(n)
-
     def read_bytes(self, n_bytes: int) -> bytes:
         return self.stream.read(f"bytes:{n_bytes}")
+
+    def read_chars(self, n_bytes: int, encoding='utf-8', errors='strict') -> str:
+        return self.stream.read(f"bytes:{n_bytes}").decode(encoding, errors)
 
     def read_bool(self) -> bool:
         return self.stream.read(f"bool")

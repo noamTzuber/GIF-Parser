@@ -4,14 +4,14 @@ from dataclasses import dataclass, field
 from PIL import Image as Image_PIL
 
 
-@dataclass
+@dataclass(slots=True)
 class ApplicationExtension:
     application_name: str = None
     identify: str = None
     data: str = None
 
 
-@dataclass
+@dataclass(slots=True)
 class GraphicControlExtension:
     disposal: int = None
     user_input_flag: int = None
@@ -19,6 +19,7 @@ class GraphicControlExtension:
     delay_time: int = None
 
 
+@dataclass(slots=True)
 class PlainTextExtension:
     top: int = None
     left: int = None
@@ -31,6 +32,7 @@ class PlainTextExtension:
     text_data: str = None
 
 
+@dataclass(slots=True)
 class Image:
     top: int = None
     left: int = None
@@ -47,7 +49,7 @@ class Image:
     img: Image_PIL = None
 
 
-@dataclass
+@dataclass(slots=True)
 class Gif:
     version: str = None
     width: int = None

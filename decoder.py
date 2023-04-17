@@ -27,13 +27,13 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
     while True:
 
         # Read the first byte to check if the next block is extension or image descriptor.
-        extension_introducer: bytes = gif_stream.read(1)
+        extension_introducer: bytes = gif_stream.read_bytes(1)
         prefix = BlockPrefix(extension_introducer)
 
         if prefix is BlockPrefix.Extension:
 
             # Check which type of extension is the next block.
-            extension_label: bytes = gif_stream.read(1)
+            extension_label: bytes = gif_stream.read_bytes(1)
             prefix = BlockPrefix(extension_label)
 
             if prefix is BlockPrefix.ApplicationExtension:
@@ -117,7 +117,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
         sub_block = gif_stream.read_bytes(number_of_sub_block_bytes).decode("utf-8")
         application_data += sub_block
 
-    app_ex.information = application_data
+    app_ex.data = application_data
     gif_object.add_application_extension(app_ex)
 
 
