@@ -92,13 +92,13 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     pixel_ratio = (pixel_ratio_value + 15) / 64
 
 
-def decode_global_color_table(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
     """
     Decode global color table.
     We read the number of bytes we received in the flag in Logical Screen Descriptor,
     and divided into triplets of bytes pairs, each triplet representing RGB of a color.
     """
-    gif_object.global_color_table = [gif_stream.read_unsigned_integer(1, 'bits') for i in range(
+    gif_object.global_color_table = [gif_stream.read_bytes(3) for i in range(
         int(gif_object.global_color_table_size))]
 
 
@@ -232,7 +232,7 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
 
 def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode comment extension"""
-    data = 'b'
+    data = b''
     # every sub block start with a bye that present the size of it.
     sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
@@ -246,8 +246,10 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     plain_text_ex = PlainTextExtension()
 
     # Read the block size (always 12)
-
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
+    if block_size != 12:
+        raise Exception("incorrect file format")
+
     plain_text_ex.left = gif_stream.read_unsigned_integer(2, "bytes")
     plain_text_ex.top = gif_stream.read_unsigned_integer(2, "bytes")
     plain_text_ex.width = gif_stream.read_unsigned_integer(2, "bytes")
@@ -257,7 +259,7 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     plain_text_ex.text_color = gif_stream.read_unsigned_integer(1, "bytes")
     plain_text_ex.background_color = gif_stream.read_unsigned_integer(1, "bytes")
 
-    data = 'b'
+    data = b''
     # every data sub block start with a bye that present the size of it.
     sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
