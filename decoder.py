@@ -127,22 +127,24 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
         pass
 
 
-def decode_graphic_control_extension(gif_stream: typing.BinaryIO, gif_object: Gif) -> None:
+def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode graphic control extension"""
 
-    # Create new Graphic Control Extensions and append it to the list in the Gif object.
-    gif_object.graphic_control_extensions.append(GraphicControlExtension())
-    block: bytes = gif_stream.read_unsigned_integer(6, 'bits')
+    graphic_control_ex = GraphicControlExtension()
 
-    packed_int: int = block[1]
-    packed_bits: str = int_to_bits(packed_int)
+    # always 4 bytes
+    block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
-    # Get the flags from the packed bits.
-    gif_object.graphic_control_extensions[-1].disposal = bits_to_int(packed_bits, 3, 3)
-    gif_object.graphic_control_extensions[-1].user_input_flag = bits_to_int(packed_bits, 6, 1)
+    # flags from Packed Fields
+    reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.user_input_flag = gif_stream.read_unsigned_integer(1, "bits")
+    transparent_color_flag = gif_stream.read_unsigned_integer(1, "bits")
 
-    gif_object.graphic_control_extensions[-1].delay_time = bytes_to_int(block, start=2, size=2)
-    gif_object.graphic_control_extensions[-1].transparent_flag = bytes_to_int(block, start=4, size=1)
+    graphic_control_ex.delay_time = gif_stream.read_unsigned_integer(2, "bytes")
+    graphic_control_ex.transparent_flag = gif_stream.read_unsigned_integer(1, "bytes")
+
+    gif_object.graphic_control_extensions.append(graphic_control_ex)
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
