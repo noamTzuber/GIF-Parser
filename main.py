@@ -1,12 +1,13 @@
-import gif_objects
-from decoder import decode_gif, decode_image_data, decode_local_color_table
+from pprint import pprint
+
+from decoder import decode_gif
+from gif_objects import Gif
 
 
 def main():
-    with open("example.gif", "rb") as gif_file:
-        gif = decode_gif(gif_file)
-
-    print(gif)
+    with open("gif_tests/test4.gif", "rb") as gif_file:
+        gif: Gif = decode_gif(gif_file)
+    pprint(gif)
 
 
 if __name__ == '__main__':
