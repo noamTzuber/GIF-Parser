@@ -14,7 +14,7 @@ class ApplicationExtension:
 @dataclass(slots=True)
 class GraphicControlExtension:
     disposal: int = None
-    user_input_flag: int = None
+    user_input_flag: bool = None
     transparent_flag: int = None
     delay_time: int = None
 

@@ -125,11 +125,17 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
     # flags from Packed Fields
     reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
-    graphic_control_ex.user_input_flag = gif_stream.read_unsigned_integer(1, "bits")
-    transparent_color_flag = gif_stream.read_unsigned_integer(1, "bits")
+    graphic_control_ex.user_input_flag = gif_stream.read_bool()
+    transparent_color_flag = gif_stream.read_bool()
 
     graphic_control_ex.delay_time = gif_stream.read_unsigned_integer(2, "bytes")
     graphic_control_ex.transparent_flag = gif_stream.read_unsigned_integer(1, "bytes")
+
+    block_terminator = gif_stream.read_unsigned_integer(1, "bytes")
+
+    # Check block terminator
+    if block_terminator != 0:
+        raise IncorrectFileFormat(f'Should be block terminator(0) but we read {block_terminator}')
 
     gif_object.graphic_control_extensions.append(graphic_control_ex)
 
@@ -232,7 +238,7 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     # Read the block size (always 12)
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
     if block_size != 12:
-        raise Exception("incorrect block size in plain text extension")
+        raise IncorrectFileFormat(f'plain text extension block size should be 12 not {block_size}')
 
     plain_text_ex.left = gif_stream.read_unsigned_integer(2, "bytes")
     plain_text_ex.top = gif_stream.read_unsigned_integer(2, "bytes")
