@@ -143,7 +143,7 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
     current_image.local_color_table_flag = gif_stream.read_bool()
-    current_image.interlace_flag = gif_stream.read_bool()
+    current_image.interlace_index = gif_stream.read_bool()
 
     # those attributes are not necessary for the gif
     current_image.sort_flag = gif_stream.read_bool()
@@ -232,7 +232,7 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
     # Read the block size (always 12)
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
     if block_size != 12:
-        raise Exception("incorrect file format")
+        raise Exception("incorrect block size in plain text extension")
 
     plain_text_ex.left = gif_stream.read_unsigned_integer(2, "bytes")
     plain_text_ex.top = gif_stream.read_unsigned_integer(2, "bytes")

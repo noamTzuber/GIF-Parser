@@ -38,7 +38,7 @@ class Image:
     left: int = None
     width: int = None
     height: int = None
-    interlace_flag: int = None
+    interlace_index: int = None
     local_color_table_flag: bool = False
     graphic_control_extension_index: int = None
     background_color_index: int = None
