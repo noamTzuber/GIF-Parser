@@ -42,6 +42,7 @@ class Image:
     local_color_table_flag: bool = False
     graphic_control_extension_index: int = None
     background_color_index: int = None
+    size_of_local_color_table: int = None
     image_data = []
     image_indexes = []
     # we think we don't need it
@@ -57,6 +58,7 @@ class Gif:
     height: int = None
     global_color_table_size: int = None
     global_color_table: Image_PIL = None
+    background_color_index:int = None
     images: list[Image] = field(default_factory=list)
     applications_extensions: list[ApplicationExtension] = field(default_factory=list)
     graphic_control_extensions: list[GraphicControlExtension] = field(default_factory=list)
