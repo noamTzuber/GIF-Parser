@@ -126,7 +126,7 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
     reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.user_input_flag = gif_stream.read_bool()
-    transparent_color_flag = gif_stream.read_bool()
+    graphic_control_ex.transparent_index = gif_stream.read_bool()
 
     graphic_control_ex.delay_time = gif_stream.read_unsigned_integer(2, "bytes")
     graphic_control_ex.transparent_flag = gif_stream.read_unsigned_integer(1, "bytes")

@@ -4,22 +4,20 @@ from dataclasses import dataclass, field
 from PIL import Image as Image_PIL
 
 
-@dataclass(slots=True)
 class ApplicationExtension:
     application_name: str = None
     identify: str = None
     data: str = None
 
 
-@dataclass(slots=True)
 class GraphicControlExtension:
     disposal: int = None
     user_input_flag: bool = None
     transparent_flag: int = None
+    transparent_index: int = None
     delay_time: int = None
 
 
-@dataclass(slots=True)
 class PlainTextExtension:
     top: int = None
     left: int = None
@@ -32,7 +30,6 @@ class PlainTextExtension:
     text_data: str = None
 
 
-@dataclass(slots=True)
 class Image:
     top: int = None
     left: int = None
@@ -51,7 +48,6 @@ class Image:
     img: Image_PIL = None
 
 
-@dataclass(slots=True)
 class Gif:
     version: str = None
     width: int = None
@@ -59,11 +55,11 @@ class Gif:
     global_color_table_size: int = None
     global_color_table: Image_PIL = None
     background_color_index:int = None
-    images: list[Image] = field(default_factory=list)
-    applications_extensions: list[ApplicationExtension] = field(default_factory=list)
-    graphic_control_extensions: list[GraphicControlExtension] = field(default_factory=list)
-    plain_text_extensions: list[PlainTextExtension] = field(default_factory=list)
-    local_color_tables: list[Image_PIL] = field(default_factory=list)
+    images: list[Image] = []
+    applications_extensions: list[ApplicationExtension] = []
+    graphic_control_extensions: list[GraphicControlExtension] = []
+    plain_text_extensions: list[PlainTextExtension] = []
+    local_color_tables: list[Image_PIL] = []
 
     def add_application_extension(self, extension):
         self.applications_extensions.append(extension)

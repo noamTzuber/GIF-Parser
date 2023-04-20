@@ -223,8 +223,8 @@ def decode_lzw(compressed_data, color_table_size):
     :param color_table_size:
     :return: compress_data:
     """
-    writing_size = math.ceil(math.log(color_table_size + 1)) + 1
-    reading_size = writing_size
+    writing_size = color_table_size
+    reading_size = writing_size + 1
     table = initialize_code_table(int(color_table_size), True)
     reading_size = update_code_size1(len(table), reading_size)
 
