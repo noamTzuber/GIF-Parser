@@ -1,6 +1,7 @@
 import math
 
 from bitstring import ConstBitStream
+import binascii
 
 
 # the example we using here:
@@ -48,7 +49,7 @@ def update_code_size(table_size, code_size):
     :param writing_size:
     :return: writing_size:
     """
-    if table_size == int(math.pow(2, code_size)) + 1:
+    if table_size >= int(math.pow(2, code_size)) + 1:
         return code_size + 1
     return code_size
 
@@ -60,12 +61,15 @@ def flip_data(compress_data):
     :param compress_data:
     :return: fliped_data
     """
-    fliped_data = b''
+    fliped_data = ''
     length = len(compress_data) / 8
     for i in range(int(length)):
         fliped_data += compress_data[-8:]
         compress_data = compress_data[:-8]
-    return fliped_data
+
+    bytes_object = fliped_data.encode("utf-8")
+
+    return bytes_object
 
 
 def get_encode_element(stream, reading_size):
@@ -204,12 +208,12 @@ def update_code_size1(table_size, code_size):
     :param writing_size:
     :return: writing_size:
     """
-    if table_size == int(math.pow(2, code_size)):
+    if table_size == int(math.pow(2, code_size)) and code_size < 12:
         return code_size + 1
     return code_size
 
 
-def decode_lzw(compressed_data, color_table_size):
+def decode_lzw(compressed_data, lzw_minimum_code_size):
     """
     using lzw algorithm for compress data ang gif images
     the table code look like this:
@@ -223,8 +227,10 @@ def decode_lzw(compressed_data, color_table_size):
     :param color_table_size:
     :return: compress_data:
     """
-    writing_size = color_table_size
+    writing_size = lzw_minimum_code_size
+    #!!!!!!!!!!!!!!! int the origin was writing_size = lzw_minimum_code_size + 1 and reading_size = writing_size
     reading_size = writing_size + 1
+    color_table_size = math.pow(2, lzw_minimum_code_size)
     table = initialize_code_table(int(color_table_size), True)
     reading_size = update_code_size1(len(table), reading_size)
 
@@ -234,7 +240,11 @@ def decode_lzw(compressed_data, color_table_size):
     #  add the enf of reading
     end_of_information_code = int(table[(len(table) - 1)])
 
-    compressed_data = flip_data(bytes(bin(int(compressed_data, 16))[2:], 'utf-8'))
+    bytes_object = bytes.fromhex(compressed_data)
+
+    # Convert bytes object to binary string with leading zeros
+    binary_string = ''.join(format(byte, '08b') for byte in bytes_object)
+    compressed_data = flip_data(binary_string)
     data_length = len(compressed_data)
     compressed_data = hex(int(compressed_data, 2))
     compressed_data = fill_zero_hexa(compressed_data, data_length)
@@ -250,24 +260,40 @@ def decode_lzw(compressed_data, color_table_size):
     decompressed_data = b''
     curr_el = get_decode_element(stream, reading_size, pos)
     pos = pos - reading_size
-
     decompressed_data += index_to_binary(table[curr_el], writing_size)
     while True:
         next_el = get_decode_element(stream, reading_size, pos)
         if next_el == end_of_information_code:
             break
+        if next_el == clear_code:
+            # need to check what happend with the current elemend and to add limitation of 12 size writing size
+            # k = table[curr_el][0]
+            decompressed_data += index_to_binary(table[curr_el][0], writing_size)
+
+            table = initialize_code_table(int(color_table_size), True)
+            reading_size = lzw_minimum_code_size + 1
+            pos = pos - reading_size
+            curr_el = get_decode_element(stream, reading_size, pos)
+            pos = pos - reading_size
+
+            continue
+
         if next_el in table:
             decompressed_data += index_to_binary(table[next_el], writing_size)
             k = table[next_el][0]
         else:
             k = table[curr_el][0]
             decompressed_data += index_to_binary(table[curr_el] + "," + k, writing_size)
+
+        if pos < 1000:
+            pass
         table[len(table)] = table[curr_el] + "," + k
         reading_size = update_code_size1(len(table), reading_size)
         pos = pos - reading_size
         curr_el = next_el
 
-    return decompressed_data
+
+    return decompressed_data, writing_size
 
 
 if __name__ == '__main__':
