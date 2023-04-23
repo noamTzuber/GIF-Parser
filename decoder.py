@@ -48,8 +48,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
-            a = Image()
-            gif_object.images.append(a)
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
@@ -143,7 +141,8 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
-    current_image = gif_object.images[-1]
+    current_image = Image()
+    gif_object.images.append(current_image)
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
