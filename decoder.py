@@ -49,9 +49,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
         elif prefix is BlockPrefix.ImageDescriptor:
             a = Image()
-            # for create new image we need to restart the creating image every time
-            a.image_indexes = []
-            a.image_data = []
             gif_object.images.append(a)
             decode_image_descriptor(gif_stream, gif_object)
 
