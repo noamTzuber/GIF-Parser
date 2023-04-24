@@ -200,43 +200,39 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
         current_index = int((res[pos:pos + index_length]), 2)
         if (current_index == gif_object.graphic_control_extensions[-1].transparent_index and
                 gif_object.graphic_control_extensions[-1].transparent_color_flag):
-
             # current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
-            current_image.image_data.append(gif_object.images[-2].image_data[int(pos / index_length)])
-
+            current_image.image_data.append(-1)
         else:
             # current_image.image_indexes.append(current_index)
-            # convert index to rgb
             current_image.image_data.append(local_color_table[current_index])
 
+    current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
-    current_image.img = create_img( current_image.image_data, current_image.width, current_image.height)
 
-
-def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
-    # can be replaced with ""
-    # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
-    # Create a new image with the specified size
-    img = Image_PIL.new('RGB', (width, height))
-
-    rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
-
-    # Set the pixel values of the image using the RGB array
-    pixels = img.load()
-
-    # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
-    # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
-    # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
-    # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
-    # and stores them as a tuple of three integers
-    for row in range(width):
-        for column in range(height):
-            hex_color = rgb_array[column * width + row]
-            r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
-            pixels[row, column] = (r, g, b)
-
-    img.show()
-    return img
+# def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
+#     # can be replaced with ""
+#     # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
+#     # Create a new image with the specified size
+#     img = Image_PIL.new('RGB', (width, height))
+#
+#     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
+#
+#     # Set the pixel values of the image using the RGB array
+#     pixels = img.load()
+#
+#     # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
+#     # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
+#     # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
+#     # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
+#     # and stores them as a tuple of three integers
+#     for row in range(width):
+#         for column in range(height):
+#             hex_color = rgb_array[column * width + row]
+#             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+#             pixels[row, column] = (r, g, b)
+#
+#     img.show()
+#     return img
 
 # def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
 #     img_top = gif_object.images[-1].top
@@ -283,42 +279,42 @@ def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
 #     img.show()
 #     return img
 #
-# def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
-#     # can be replaced with ""
-#     # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
-#     # Create a new image with the specified size
-#     current_image = gif_object.images[-1]
-#     if (image_size := gif_object.width * gif_object.height) > width * height:
-#         arr = [-1] * image_size
-#         start_current_image = current_image.top * gif_object.width + current_image.left
-#         count = 0
-#         for pos in range(0, len(image_data), width):
-#             arr[start_current_image + count: start_current_image + count + width] = image_data[pos:pos+width]
-#             count += gif_object.width
-#         arr[start_current_image + count: start_current_image + count + width] = image_data[pos:pos + width]
-#         count += gif_object.width
-#         last_image = gif_object.images[-2]
-#         current_image.image_data = [arr[i] if arr[i] != -1 else last_image.image_data[i] for i in range(len(arr))]
-#
-#     img = Image_PIL.new('RGB', (gif_object.width, gif_object.height))
-#     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in current_image.image_data]
-#
-#     # Set the pixel values of the image using the RGB array
-#     pixels = img.load()
-#
-#     # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
-#     # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
-#     # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
-#     # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
-#     # and stores them as a tuple of three integers
-#     for row in range(gif_object.width):
-#         for column in range(gif_object.height):
-#             hex_color = rgb_array[column * gif_object.width + row]
-#             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
-#             pixels[row, column] = (r, g, b)
-#
-#     img.show()
-#     return img
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
+    # can be replaced with ""
+    # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
+    # Create a new image with the specified size
+    current_image = gif_object.images[-1]
+    if (image_size := gif_object.width * gif_object.height) > width * height:
+        arr = [-1] * image_size
+        start_current_image = current_image.top * gif_object.width + current_image.left
+        count = 0
+        for pos in range(0, len(image_data), width):
+            arr[start_current_image + count: start_current_image + count + width] = image_data[pos:pos+width]
+            count += gif_object.width
+        arr[start_current_image + count: start_current_image + count + width] = image_data[pos:pos + width]
+        count += gif_object.width
+        last_image = gif_object.images[-2]
+        current_image.image_data = [arr[i] if arr[i] != -1 else last_image.image_data[i] for i in range(len(arr))]
+
+    img = Image_PIL.new('RGB', (gif_object.width, gif_object.height))
+    rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in current_image.image_data]
+
+    # Set the pixel values of the image using the RGB array
+    pixels = img.load()
+
+    # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
+    # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
+    # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
+    # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
+    # and stores them as a tuple of three integers
+    for row in range(gif_object.width):
+        for column in range(gif_object.height):
+            hex_color = rgb_array[column * gif_object.width + row]
+            r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+            pixels[row, column] = (r, g, b)
+
+    img.show()
+    return img
 
 
 def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
