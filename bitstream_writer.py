@@ -4,9 +4,12 @@ import bitstring
 
 
 class BitStreamWriter:
-    def __init__(self) -> None:
+    def __init__(self, stream: bitstring.BitStream | None = None) -> None:
         super().__init__()
-        self._stream = bitstring.BitStream()
+        if stream:
+            self._stream = stream
+        else:
+            self._stream = bitstring.BitStream()
 
     def _insert(self, bits: bitstring.Bits) -> None:
         self._stream.append(bits)
@@ -21,8 +24,7 @@ class BitStreamWriter:
 
     def write_unsigned_integer(self, input_num: int, length: int, unit: Literal['bits', 'bytes']) -> None:
         """
-        receive a number and unit (can be 'bits' or 'bytes') and reads n times in the unit size and returns the int
-        representation. if in bytes, reads in little endian
+
         """
         if unit == "bits":
             bits = bitstring.Bits(uint=input_num, length=length)
@@ -45,11 +47,16 @@ class BitStreamWriter:
         """
         raise NotImplemented
 
+    def to_file(self) -> None:
+        raise NotImplemented
+
     def __repr__(self):
         return repr(self._stream)
 
     def __str__(self):
         return str(self._stream)
+
+
 
 
 if __name__ == '__main__':
