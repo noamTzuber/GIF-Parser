@@ -51,7 +51,7 @@ class Image:
     # we think we don't need it
     local_color_table_index: int = field(default=None)
     plain_text_extension_index: int = field(default=None)
-    img: Image_PIL = field(default=None)
+    img: Image_PIL.Image = field(default=None)
 
 
 @define
@@ -61,13 +61,13 @@ class Gif:
     height: int = field(default=None)
 
     global_color_table_size: int = field(default=None)
-    global_color_table: Image_PIL = field(default=None, repr=False)
+    global_color_table: Image_PIL.Image = field(default=None, repr=False)
     background_color_index: int = field(default=None)
     images: list[Image] = field(factory=list, repr=False)
     applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
     graphic_control_extensions: list[GraphicControlExtension] = field(factory=list, repr=False)
     plain_text_extensions: list[PlainTextExtension] = field(factory=list, repr=False)
-    local_color_tables: list[Image_PIL] = field(factory=list, repr=False)
+    local_color_tables: list[Image_PIL.Image] = field(factory=list, repr=False)
 
     def add_application_extension(self, extension):
         self.applications_extensions.append(extension)

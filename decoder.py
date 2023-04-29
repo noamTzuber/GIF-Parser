@@ -15,6 +15,7 @@ LAST_ELEMENT = -1
 TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
 
+
 def decode_gif(io: typing.BinaryIO) -> Gif:
     gif_object: Gif = Gif()
     gif_stream: BitStream = BitStream(bitstring.ConstBitStream(io))
@@ -52,7 +53,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
         elif prefix is BlockPrefix.ImageDescriptor:
             if len(gif_object.images) == 11:
-               i = 0
+                i = 0
             a = Image()
             # for create new image we need to restart the creating image every time
             a.image_indexes = []
@@ -221,7 +222,7 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
         rows = 0
         # add the colors from the image data that we extract from lzw
         for pos in range(0, len(image_data), width):
-            arr[start_current_image + rows: start_current_image + rows + width] = image_data[pos:pos+width]
+            arr[start_current_image + rows: start_current_image + rows + width] = image_data[pos:pos + width]
             rows += gif_object.width
         pos = pos + width
         #  complete the lats line - what is left from the image data
@@ -251,8 +252,6 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
             hex_color = rgb_array[column * gif_object.width + row]
             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
             pixels[row, column] = (r, g, b)
-
-    img.show()
     return img
 
 
