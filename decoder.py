@@ -11,6 +11,10 @@ from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtensio
     IncorrectFileFormat
 from lzw import decode_lzw
 
+LAST_ELEMENT = -1
+TRANSPARENT_VALUE = -1
+PENULTIMATE = -2
+
 
 def decode_gif(io: typing.BinaryIO) -> Gif:
     gif_object: Gif = Gif()
@@ -48,10 +52,17 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
+            if len(gif_object.images) == 11:
+                i = 0
+            a = Image()
+            # for create new image we need to restart the creating image every time
+            a.image_indexes = []
+            a.image_data = []
+            gif_object.images.append(a)
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
-            if gif_object.images[-1].local_color_table_flag:
+            if gif_object.images[LAST_ELEMENT].local_color_table_flag:
                 decode_local_color_table(gif_stream, gif_object)
 
             decode_image_data(gif_stream, gif_object)
@@ -107,9 +118,9 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
     app_ex.identify = gif_stream.read_bytes(3).decode("utf-8")
 
-    application_data = ""
+    application_data = b''
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
-        sub_block = gif_stream.read_bytes(number_of_sub_block_bytes).decode("utf-8")
+        sub_block = gif_stream.read_bytes(number_of_sub_block_bytes)
         application_data += sub_block
 
     app_ex.data = application_data
@@ -141,8 +152,7 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
-    current_image = Image()
-    gif_object.images.append(current_image)
+    current_image = gif_object.images[LAST_ELEMENT]
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -161,9 +171,8 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
 
 
-
 def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
-    current_image = gif_object.images[-1]
+    current_image = gif_object.images[LAST_ELEMENT]
     size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
 
     colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
@@ -174,78 +183,75 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
 def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode image data"""
     res = b''
-    current_image = gif_object.images[-1]
+    current_image = gif_object.images[LAST_ELEMENT]
 
     lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
     index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
-    compressed_sub_block = ""
+    compressed_sub_block = b''
 
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
-        compressed_sub_block += gif_stream.read_hex(number_of_sub_block_bytes, 'bytes')
+        compressed_sub_block += gif_stream.read_bytes(number_of_sub_block_bytes)
     res, index_length = decode_lzw(compressed_sub_block, lzw_minimum_code_size)
 
     if current_image.local_color_table_flag:
-        local_color_table = gif_object.local_color_tables[-1]
+        local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
     else:
         local_color_table = gif_object.global_color_table
 
     for pos in range(0, len(res), index_length):
         current_index = int((res[pos:pos + index_length]), 2)
-        # save the index
-        # if len(gif_object.images) >= 2 :
-        #     if (current_index == 2 and
-        #             gif_object.graphic_control_extensions[-1].transparent_color_flag):
-        #
-        #         current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
-        #         current_image.image_data.append(gif_object.images[-2].image_data[int(pos / index_length)])
-        #
-        #
-        #     else:
-        #         current_image.image_indexes.append(current_index)
-        #         # convert index to rgb
-        #         current_image.image_data.append(local_color_table[current_index])
-        # else:
-        if (current_index == gif_object.graphic_control_extensions[-1].transparent_index and
-                gif_object.graphic_control_extensions[-1].transparent_color_flag):
-
-            current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
-            current_image.image_data.append(gif_object.images[-2].image_data[int(pos / index_length)])
-
+        if (current_index == gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_index and
+                gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_color_flag):
+            # current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
+            # if the index it transparent we put -1 and in the future we will change it to correct color
+            current_image.image_data.append(TRANSPARENT_VALUE)
         else:
-            current_image.image_indexes.append(current_index)
-            # convert index to rgb
+            # current_image.image_indexes.append(current_index)
             current_image.image_data.append(local_color_table[current_index])
 
-
-    current_image.img = create_img(current_image.image_data, current_image.width, current_image.height)
-
+    current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
 
-def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
-    # can be replaced with ""
-    # Image_PIL.frombytes('RGB', (width, height), b''.join(image_data))
-    # Create a new image with the specified size
-    img = Image_PIL.new('RGB', (width, height))
-    
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
+    current_image = gif_object.images[LAST_ELEMENT]
+    #  for all the images except the first
+    if len(gif_object.images) > 1:
+        arr = [TRANSPARENT_VALUE] * gif_object.width * gif_object.height
+        start_current_image = current_image.top * gif_object.width + current_image.left
+        rows = 0
+        # add the colors from the image data that we extract from lzw
+        for pos in range(0, len(image_data), width):
+            arr[start_current_image + rows: start_current_image + rows + width] = image_data[pos:pos + width]
+            rows += gif_object.width
+        pos = pos + width
+        #  complete the lats line - what is left from the image data
+        arr[start_current_image + rows: start_current_image + len(image_data) - pos] = image_data[pos:len(image_data)]
+        rows += gif_object.width
+        last_image = gif_object.images[PENULTIMATE]
+        # for all the indexes that don't have value or transparent-value , we take the data from the last image
+        current_image.image_data = (
+            [arr[i] if arr[i] != TRANSPARENT_VALUE else last_image.image_data[i] for i in range(len(arr))]
+        )
 
-    rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in image_data]
+    img = Image_PIL.new('RGB', (gif_object.width, gif_object.height))
+    rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in current_image.image_data]
 
     # Set the pixel values of the image using the RGB array
     pixels = img.load()
 
-    # for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
-    # then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
-    # The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
-    # It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
-    # and stores them as a tuple of three integers
-    for row in range(width):
-        for column in range(height):
-            hex_color = rgb_array[column * width + row]
+    ''' 
+    for each pixel - we take specific color ("#FF0000") and divide it to 3 parts("FF","00","00") of RGB.
+    then convert it from hex(16) to int (255,0,0), in the end we get tuple of three numbers that represent the color
+    The code iterates over each pixel in an image represented as a two-dimensional array of hex color codes.
+    It then extracts the red, green, and blue color components of each pixel by converting the hex codes to integers
+    and stores them as a tuple of three integers
+    '''
+    for row in range(gif_object.width):
+        for column in range(gif_object.height):
+            hex_color = rgb_array[column * gif_object.width + row]
             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
             pixels[row, column] = (r, g, b)
-
-    img.show()
     return img
 
 

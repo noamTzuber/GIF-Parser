@@ -213,6 +213,15 @@ def update_code_size1(table_size, code_size):
     return code_size
 
 
+def get_first_element(concats_colors):
+    comma_index = concats_colors.find(",")
+    if comma_index != -1:
+        result = concats_colors[:comma_index]
+    else:
+        result = concats_colors
+    return result
+
+
 def decode_lzw(compressed_data, lzw_minimum_code_size):
     """
     using lzw algorithm for compress data ang gif images
@@ -240,10 +249,12 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     #  add the enf of reading
     end_of_information_code = int(table[(len(table) - 1)])
 
-    bytes_object = bytes.fromhex(compressed_data)
+    #bytes_object = bytes.fromhex(compressed_data)
+    bytes_object = compressed_data
 
     # Convert bytes object to binary string with leading zeros
     binary_string = ''.join(format(byte, '08b') for byte in bytes_object)
+
     compressed_data = flip_data(binary_string)
     data_length = len(compressed_data)
     compressed_data = hex(int(compressed_data, 2))
@@ -280,18 +291,15 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
 
         if next_el in table:
             decompressed_data += index_to_binary(table[next_el], writing_size)
-            k = table[next_el][0]
+            k = get_first_element(table[next_el])
         else:
-            k = table[curr_el][0]
+            k =get_first_element(table[curr_el])
             decompressed_data += index_to_binary(table[curr_el] + "," + k, writing_size)
 
-        if pos < 1000:
-            pass
         table[len(table)] = table[curr_el] + "," + k
         reading_size = update_code_size1(len(table), reading_size)
         pos = pos - reading_size
         curr_el = next_el
-
 
     return decompressed_data, writing_size
 
