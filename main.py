@@ -1,16 +1,24 @@
+import pstats
 from pprint import pprint
+
+import pickle
 
 from decoder import decode_gif
 from gif_objects import Gif
+from writer import write_gif
 
 
-def main():
-    with open("gif_tests/test4.gif", "rb") as gif_file:
+def main(filename: str, *, show_image: bool = False, from_pickle:bool = False):
+    with open(filename, "rb") as gif_file:
         gif: Gif = decode_gif(gif_file)
+
     pprint(gif)
-    for image in gif.images:
-        image.img.show()
+    if show_image:
+        for image in gif.images:
+            image.img.show()
+
+    write_gif(gif)
 
 
 if __name__ == '__main__':
-    main()
+    main("gif_tests/test4.gif", show_image=True)

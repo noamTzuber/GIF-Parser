@@ -40,8 +40,12 @@ class PlainTextExtension:
 class CommentExtension:
     data: int = field(default=None)
 
+
 @define
 class Image:
+    image_data: list[typing.Any] = field(factory=list, repr=False)
+    image_indexes: list[typing.Any] = field(factory=list, repr=False)
+
     top: int = field(default=None)
     left: int = field(default=None)
     width: int = field(default=None)
@@ -54,8 +58,7 @@ class Image:
     graphic_control_extension_index: int = field(default=None)
     background_color_index: int = field(default=None)
     size_of_local_color_table: int = field(default=None)
-    image_data: list[typing.Any] = field(factory=list, repr=False)
-    image_indexes: list[typing.Any] = field(factory=list, repr=False)
+
     # we think we don't need it
     local_color_table_index: int = field(default=None)
     plain_text_extension_index: int = field(default=None)
@@ -64,6 +67,13 @@ class Image:
 
 @define
 class Gif:
+    images: list[Image] = field(factory=list, repr=False)
+    applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
+    comments_extensions: list[CommentExtension] = field(factory=list, repr=False)
+    graphic_control_extensions: list[GraphicControlExtension] = field(factory=list, repr=False)
+    plain_text_extensions: list[PlainTextExtension] = field(factory=list, repr=False)
+    local_color_tables: list[Image_PIL.Image] = field(factory=list, repr=False)
+
     version: str = field(default=None)
     width: int = field(default=None)
     height: int = field(default=None)
@@ -74,12 +84,6 @@ class Gif:
     global_color_table: Image_PIL.Image = field(default=None, repr=False)
     background_color_index: int = field(default=None)
     pixel_aspect_ratio: int = field(default=None)
-    images: list[Image] = field(factory=list, repr=False)
-    applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
-    comments_extensions: list[CommentExtension] = field(factory=list, repr=False)
-    graphic_control_extensions: list[GraphicControlExtension] = field(factory=list, repr=False)
-    plain_text_extensions: list[PlainTextExtension] = field(factory=list, repr=False)
-    local_color_tables: list[Image_PIL.Image] = field(factory=list, repr=False)
 
     def add_application_extension(self, extension):
         self.applications_extensions.append(extension)

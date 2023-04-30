@@ -1,3 +1,5 @@
+import math
+
 from PIL import Image as Image_PIL
 
 from bitstream import BitStream
@@ -5,7 +7,7 @@ from bitstream_writer import BitStreamWriter
 from gif_objects import Gif
 
 
-def write_gif(gif_object: Gif) -> None:
+def write_gif(gif_object: Gif) -> BitStreamWriter:
     gif_stream = BitStreamWriter()
 
     write_header(gif_stream, gif_object)
@@ -16,13 +18,36 @@ def write_gif(gif_object: Gif) -> None:
 
     # TODO: continue writing
 
+    return gif_stream
+
 
 def write_header(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+    bytes = gif_object.version.encode()
+    gif_stream.write_bytes(bytes)
 
 
 def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+    gif_stream.write_unsigned_integer(gif_object.width, 2, 'bytes')
+    gif_stream.write_unsigned_integer(gif_object.height, 2, 'bytes')
+
+    # if global color table exist
+    global_color_table_exist = gif_object.global_color_table_size != 0
+    gif_stream.write_bool(global_color_table_exist)
+
+    # both not relevant
+    gif_stream.write_unsigned_integer(gif_object.color_resolution, 3, 'bits')
+    gif_stream.write_bool(gif_object.sort_flag)
+
+    global_color_table_size_value = int(math.log2(gif_object.global_color_table_size)) - 1
+    if global_color_table_exist:
+        gif_stream.write_unsigned_integer(global_color_table_size_value, 3, 'bits')
+    else:
+        gif_stream.write_unsigned_integer(0, 3, 'bits')
+
+    gif_stream.write_unsigned_integer(gif_object.background_color_index, 1, 'bytes')
+
+    pixel_ratio_value = int(gif_object.pixel_aspect_ratio * 64 - 15)
+    gif_stream.write_unsigned_integer(pixel_ratio_value, 1, 'bytes')
 
 
 def write_global_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
