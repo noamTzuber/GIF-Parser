@@ -1,28 +1,40 @@
-import cProfile
-import pstats
-import subprocess
-
-import lzw
-import main
 import timeit
+from types import FunctionType
+from typing import Callable, List
+
+from attrs import define
 
 from utils import chunker
 
 
-def profile(function, *args, **kwargs):
-    with cProfile.Profile() as pr:
-        function(*args, **kwargs)
+@define
+class Result:
+    name: str
+    runs: int
+    total_time: float
 
-    stats = pstats.Stats(pr)
-    stats.sort_stats(pstats.SortKey.TIME)
-    stats.dump_stats(filename='profiling.prof')
-    subprocess.run(['snakeviz', 'profiling.prof'])
+    @property
+    def average(self):
+        return self.total_time / self.runs
+
+    def __repr__(self):
+        return f"{self.name}, {self.runs} runs, total: {self.total_time}, average: {self.average}"
 
 
-def time_it(function, n: int, *args, **kwargs):
+def time_it(n_runs: int, function: callable, *args, **kwargs) -> Result:
     t = timeit.Timer(lambda: function(*args, **kwargs))
-    time = t.timeit(n)
-    print(f"{function.__name__}, {n} runs, total: {time}, average: {time / n}")
+    time = t.timeit(n_runs)
+    return Result(function.__name__, n_runs, time)
+
+
+def test_functions(n_runs: int, functions: List[callable], *args, **kwargs):
+    """
+    the first function is treated as the truth, and every other function is
+    """
+    if not functions:
+        return
+
+    output = functions[0](*args, **kwargs)
 
 
 def flip_data(compress_data):
@@ -64,10 +76,9 @@ def flip_data4(compress_data):
 
 
 if __name__ == '__main__':
-    # profile(main.main, "gif_tests/test4.gif", show_image=True)
     s = "08010020080100200801002008010020080100200801002008010020" * 1000
     n = 1000
-    time_it(flip_data, n, s)
-    time_it(flip_data2, n, s)
-    time_it(flip_data3, n, s)
-    time_it(flip_data4, n, s)
+    time_it(n, flip_data, s)
+    time_it(n, flip_data2, s)
+    time_it(n, flip_data3, s)
+    time_it(n, flip_data4, s)
