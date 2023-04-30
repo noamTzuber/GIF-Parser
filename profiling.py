@@ -67,7 +67,7 @@ if __name__ == '__main__':
     # profile(main.main, "gif_tests/test4.gif", show_image=True)
     s = "08010020080100200801002008010020080100200801002008010020" * 1000
     n = 1000
-    time_it(lzw.flip_data, n, s)
-    time_it(lzw.flip_data2, n, s)
-    time_it(lzw.flip_data3, n, s)
-    time_it(lzw.flip_data4, n, s)
+    time_it(flip_data, n, s)
+    time_it(flip_data2, n, s)
+    time_it(flip_data3, n, s)
+    time_it(flip_data4, n, s)
