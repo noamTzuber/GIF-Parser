@@ -8,7 +8,7 @@ from PIL import Image as Image_PIL
 from bitstream import BitStream
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
-    IncorrectFileFormat
+    IncorrectFileFormat, CommentExtension
 from lzw import decode_lzw
 
 LAST_ELEMENT = -1
@@ -83,8 +83,8 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     global_color_table_exist = gif_stream.read_bool()
 
     # both not relevant
-    resolution = gif_stream.read_unsigned_integer(3, 'bits')
-    is_ordered = gif_stream.read_bool()
+    gif_object.color_resolution = gif_stream.read_unsigned_integer(3, 'bits')
+    gif_object.sort_flag = gif_stream.read_bool()
 
     global_color_table_size_value = gif_stream.read_unsigned_integer(3, 'bits')
     if global_color_table_exist:
@@ -95,7 +95,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     gif_object.background_color_index = gif_stream.read_unsigned_integer(1, 'bytes')
 
     pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
-    pixel_ratio = (pixel_ratio_value + 15) / 64
+    gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
 
 
 def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -132,9 +132,11 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
     # always 4 bytes
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
+    if block_size != 4:
+        raise IncorrectFileFormat(f'graphic control extension size should be 4 not {block_size}')
 
     # flags from Packed Fields
-    reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.reserved = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.user_input_flag = gif_stream.read_bool()
     graphic_control_ex.transparent_color_flag = gif_stream.read_bool()
@@ -161,13 +163,8 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
 
     current_image.local_color_table_flag = gif_stream.read_bool()
     current_image.interlace_index = gif_stream.read_bool()
-
-    # those attributes are not necessary for the gif
-    sort_flag = gif_stream.read_bool()
-
-    # skipping 2 bits
-    gif_stream.skip(2, 'bits')
-
+    current_image.sort_flag = gif_stream.read_bool()
+    current_image.reserved = gif_stream.read_unsigned_integer(2, 'bits')
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
 
 
@@ -257,12 +254,16 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
 
 def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode comment extension"""
+    comment_ex = CommentExtension()
     data = b''
     # every sub block start with a bye that present the size of it.
     sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
         data += gif_stream.read_bytes(sub_block_size)
         sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
+
+    comment_ex.data = data
+    gif_object.comments_extensions.append(comment_ex)
 
 
 def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
