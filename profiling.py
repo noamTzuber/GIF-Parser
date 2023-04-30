@@ -3,9 +3,9 @@ import pstats
 import main
 
 
-def profile(*args, **kwargs):
+def profile(function, *args, **kwargs):
     with cProfile.Profile() as pr:
-        main.main(*args, **kwargs)
+        function(*args, **kwargs)
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
@@ -13,4 +13,4 @@ def profile(*args, **kwargs):
 
 
 if __name__ == '__main__':
-    profile("gif_tests/test4.gif", show=True)
+    profile(main.main, "gif_tests/test4.gif", show=True)
