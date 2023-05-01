@@ -58,7 +58,7 @@ def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif) ->
     application_ex = gif_object.applications_extensions[-1]
     gif_stream.write_bytes(Extension)
     gif_stream.write_bytes(ApplicationExtension)
-    gif_stream.write_unsigned_integer(ApplicationExtensionBBlockSize, 1, 'bytes')
+    gif_stream.write_unsigned_integer(ApplicationExtensionBlockSize, 1, 'bytes')
 
     gif_stream.write_bytes(application_ex.application_name)
     gif_stream.write_bytes(application_ex.identify)
@@ -76,7 +76,22 @@ def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif) ->
 
 
 def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+    graphic_control_ex = gif_object.graphic_control_extensions[-1]
+    gif_stream.write_bytes(Extension)
+    gif_stream.write_bytes(GraphicControlExtension)
+
+    gif_stream.write_unsigned_integer(GraphicControlExtensionBlockSize, 1, 'bytes')
+
+    # write package
+    gif_stream.write_unsigned_integer(graphic_control_ex.reserved, 3, 'bits')
+    gif_stream.write_unsigned_integer(graphic_control_ex.disposal, 3, 'bits')
+    gif_stream.write_bool(graphic_control_ex.disposaluser_input_flag)
+    gif_stream.write_unsigned_integer(graphic_control_ex.transparent_color_flag, 1, 'bits')
+
+    gif_stream.write_unsigned_integer(graphic_control_ex.delay_time, 2, 'bytes')
+    gif_stream.write_unsigned_integer(graphic_control_ex.transparent_index, 1, 'bytes')
+
+    gif_stream.write_bytes(BlockTerminator)
 
 
 def write_image_descriptor(gif_stream: BitStreamWriter, gif_object: Gif) -> None:

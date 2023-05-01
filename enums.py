@@ -8,7 +8,8 @@ class BlockPrefix(Enum):
     CommentExtension = b'\xFE'
     PlainTextExtension = b'\x01'
     ApplicationExtension = b'\xFF'
-    ApplicationExtensionBBlockSize = 11
+    ApplicationExtensionBlockSize = 11
+    GraphicControlExtensionBlockSize = 4
     BlockTerminator = b'00'
     NONE = b''
 
