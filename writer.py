@@ -55,7 +55,24 @@ def write_global_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> No
 
 
 def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+    application_ex = gif_object.applications_extensions[-1]
+    gif_stream.write_bytes(Extension)
+    gif_stream.write_bytes(ApplicationExtension)
+    gif_stream.write_unsigned_integer(ApplicationExtensionBBlockSize, 1, 'bytes')
+
+    gif_stream.write_bytes(application_ex.application_name)
+    gif_stream.write_bytes(application_ex.identify)
+
+    # split the data into group of 255 bytes, evert byte present as two char
+    # so every sub block should be 510
+    sub_blocks = [(application_ex.data[i:i + 510]) for i in range(0, len(string), 255)]
+
+    for sub_block in sub_blocks:
+        sub_block_size = len(sub_block)
+        gif_stream.write_bytes(sub_block_size)
+        gif_stream.write_bytes(sub_block)
+
+    gif_stream.write_bytes(BlockTerminator)
 
 
 def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:

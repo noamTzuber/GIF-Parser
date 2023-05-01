@@ -112,7 +112,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     app_ex = ApplicationExtension()
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    if block_size != 11:
+    if block_size != ApplicationExtensionBBlockSize:
         raise IncorrectFileFormat(f'application extension block size should be 11 not {block_size}')
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
