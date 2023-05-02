@@ -82,6 +82,9 @@ class Image(Differentiable):
     # we think we don't need it
     img: Image_PIL.Image = field(default=None)
 
+    # for post-processing only
+    local_colo_table: list[bytes] = field(default=None)
+
 
 @define
 class Gif(Differentiable):

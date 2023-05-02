@@ -6,15 +6,18 @@ from gif_objects import Gif, Image
 def color_table_processes(gif: Gif):
     new_structure: list[Any] = []
 
-    for i in range(len(gif.structure)):
+    i = 0
+    while i < len(gif.structure):
         block = gif.structure[i]
         if isinstance(block, Image):
             if block.local_color_table_flag:
-                new_structure.append(gif.structure[i + 1])
+                block.local_colo_table = gif.structure[i + 1]
+                i += 1
             else:
-                new_structure.append(gif.global_color_table)
+                block.local_colo_table = gif.global_color_table
             new_structure.append(block)
         else:
             new_structure.append(block)
+        i += 1
 
     gif.structure = new_structure

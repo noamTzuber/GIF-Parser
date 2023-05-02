@@ -5,7 +5,7 @@ from PIL import Image as Image_PIL
 from bitstream import BitStream
 from bitstream_writer import BitStreamWriter
 from enums import BlockPrefix
-from gif_objects import Gif, ApplicationExtension, GraphicControlExtension
+from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
 from utils import chunker
 
 ApplicationExtensionBlockSize = 11
@@ -19,10 +19,19 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
     write_header(gif_stream, gif_object)
     write_logical_screen_descriptor(gif_stream, gif_object)
 
-    if gif_object.global_color_table_size != 0:
-        write_logical_screen_descriptor(gif_stream, gif_object)
-
-    # TODO: continue writing
+    for block in gif_object.structure:
+        if isinstance(block, Image):
+            write_image(block)
+        elif isinstance(block, CommentExtension):
+            write_comment_extension(gif_stream, block)
+        elif isinstance(block, PlainTextExtension):
+            write_plain_text(gif_stream, block)
+        elif isinstance(block, GraphicControlExtension):
+            write_plain_text(gif_stream, block)
+        elif isinstance(block, ApplicationExtension):
+            write_application_extension(gif_stream, block)
+        else:
+            raise Exception("not a gif object in structure")
 
     return gif_stream
 
@@ -37,15 +46,16 @@ def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif
     gif_stream.write_unsigned_integer(gif_object.height, 2, 'bytes')
 
     # if global color table exist
-    global_color_table_exist = gif_object.global_color_table_size != 0
+    # global_color_table_exist = gif_object.global_color_table_size != 0
+    global_color_table_exist = False
     gif_stream.write_bool(global_color_table_exist)
 
     # both not relevant
     gif_stream.write_unsigned_integer(gif_object.color_resolution, 3, 'bits')
     gif_stream.write_bool(gif_object.sort_flag)
 
-    global_color_table_size_value = int(math.log2(gif_object.global_color_table_size)) - 1
     if global_color_table_exist:
+        global_color_table_size_value = int(math.log2(gif_object.global_color_table_size)) - 1
         gif_stream.write_unsigned_integer(global_color_table_size_value, 3, 'bits')
     else:
         gif_stream.write_unsigned_integer(0, 3, 'bits')
@@ -60,8 +70,7 @@ def write_global_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> No
     raise NotImplemented
 
 
-def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif,
-                                application_ex: ApplicationExtension) -> None:
+def write_application_extension(gif_stream: BitStreamWriter, application_ex: ApplicationExtension) -> None:
     gif_stream.write_bytes(BlockPrefix.Extension.value)
     gif_stream.write_bytes(BlockPrefix.ApplicationExtension.value)
     gif_stream.write_unsigned_integer(ApplicationExtensionBlockSize, 1, 'bytes')
@@ -78,8 +87,7 @@ def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif,
     gif_stream.write_bytes(BlockTerminator)
 
 
-def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif,
-                                    graphic_control_ex: [GraphicControlExtension]) -> None:
+def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control_ex: GraphicControlExtension) -> None:
     gif_stream.write_bytes(BlockPrefix.Extension.value)
     gif_stream.write_bytes(BlockPrefix.GraphicControlExtension.value)
 
@@ -97,25 +105,25 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif
     gif_stream.write_bytes(BlockTerminator)
 
 
-def write_image_descriptor(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
+def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
     raise NotImplemented
 
 
-def write_local_color_table(gif_stream: BitStreamWriter, gif_object: Gif, local_color_table: list[bytes]) -> None:
+def write_image_descriptor(gif_stream: BitStreamWriter, image: Image) -> None:
+    raise NotImplemented
+
+
+def write_local_color_table(gif_stream: BitStreamWriter, local_color_table: list[bytes]) -> None:
     gif_stream.write_bytes(b''.join(local_color_table))
 
 
-def write_image_data(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
+def write_image_data(gif_stream: BitStreamWriter, image: Image) -> None:
     raise NotImplemented
 
 
-def create_img(image_data: list[str], width: int, height: int) -> Image_PIL:
+def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
     raise NotImplemented
 
 
-def write_comment_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
-
-
-def write_plain_text(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
+def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension) -> None:
     raise NotImplemented
