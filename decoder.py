@@ -112,7 +112,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     app_ex = ApplicationExtension()
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    if block_size != ApplicationExtensionBlockSize:
+    if block_size != 11:
         raise IncorrectFileFormat(f'application extension block size should be 11 not {block_size}')
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
@@ -132,7 +132,7 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
     # always 4 bytes
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
-    if block_size != GraphicControlExtensionBlockSize:
+    if block_size != 4:
         raise IncorrectFileFormat(f'graphic control extension size should be 4 not {block_size}')
 
     # flags from Packed Fields

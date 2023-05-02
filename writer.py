@@ -6,6 +6,10 @@ from bitstream import BitStream
 from bitstream_writer import BitStreamWriter
 from gif_objects import Gif
 
+ApplicationExtensionBlockSize = 11
+GraphicControlExtensionBlockSize = 4
+BlockTerminator = b'00'
+
 
 def write_gif(gif_object: Gif) -> BitStreamWriter:
     gif_stream = BitStreamWriter()
