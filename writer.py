@@ -4,7 +4,9 @@ from PIL import Image as Image_PIL
 
 from bitstream import BitStream
 from bitstream_writer import BitStreamWriter
-from gif_objects import Gif
+from enums import BlockPrefix
+from gif_objects import Gif, ApplicationExtension, GraphicControlExtension
+from utils import chunker
 
 ApplicationExtensionBlockSize = 11
 GraphicControlExtensionBlockSize = 4
@@ -58,38 +60,35 @@ def write_global_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> No
     raise NotImplemented
 
 
-def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    application_ex = gif_object.applications_extensions[-1]
-    gif_stream.write_bytes(Extension)
-    gif_stream.write_bytes(ApplicationExtension)
+def write_application_extension(gif_stream: BitStreamWriter, gif_object: Gif,
+                                application_ex: ApplicationExtension) -> None:
+    gif_stream.write_bytes(BlockPrefix.Extension.value)
+    gif_stream.write_bytes(BlockPrefix.ApplicationExtension.value)
     gif_stream.write_unsigned_integer(ApplicationExtensionBlockSize, 1, 'bytes')
 
-    gif_stream.write_bytes(application_ex.application_name)
-    gif_stream.write_bytes(application_ex.identify)
+    gif_stream.write_bytes(application_ex.application_name.encode())
+    gif_stream.write_bytes(application_ex.identify.encode())
 
-    # split the data into group of 255 bytes, evert byte present as two char
-    # so every sub block should be 510
-    sub_blocks = [(application_ex.data[i:i + 510]) for i in range(0, len(string), 255)]
-
-    for sub_block in sub_blocks:
+    # looping in chinks of 255 bytes
+    for sub_block in chunker(255, application_ex.data):
         sub_block_size = len(sub_block)
-        gif_stream.write_bytes(sub_block_size)
+        gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
 
     gif_stream.write_bytes(BlockTerminator)
 
 
-def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    graphic_control_ex = gif_object.graphic_control_extensions[-1]
-    gif_stream.write_bytes(Extension)
-    gif_stream.write_bytes(GraphicControlExtension)
+def write_graphic_control_extension(gif_stream: BitStreamWriter, gif_object: Gif,
+                                    graphic_control_ex: [GraphicControlExtension]) -> None:
+    gif_stream.write_bytes(BlockPrefix.Extension.value)
+    gif_stream.write_bytes(BlockPrefix.GraphicControlExtension.value)
 
     gif_stream.write_unsigned_integer(GraphicControlExtensionBlockSize, 1, 'bytes')
 
     # write package
     gif_stream.write_unsigned_integer(graphic_control_ex.reserved, 3, 'bits')
     gif_stream.write_unsigned_integer(graphic_control_ex.disposal, 3, 'bits')
-    gif_stream.write_bool(graphic_control_ex.disposaluser_input_flag)
+    gif_stream.write_bool(graphic_control_ex.user_input_flag)
     gif_stream.write_unsigned_integer(graphic_control_ex.transparent_color_flag, 1, 'bits')
 
     gif_stream.write_unsigned_integer(graphic_control_ex.delay_time, 2, 'bytes')
@@ -102,8 +101,8 @@ def write_image_descriptor(gif_stream: BitStreamWriter, gif_object: Gif) -> None
     raise NotImplemented
 
 
-def write_local_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+def write_local_color_table(gif_stream: BitStreamWriter, gif_object: Gif, local_color_table: list[bytes]) -> None:
+    gif_stream.write_bytes(b''.join(local_color_table))
 
 
 def write_image_data(gif_stream: BitStreamWriter, gif_object: Gif) -> None:

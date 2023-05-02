@@ -1,5 +1,5 @@
+import typing
 from pprint import pprint
-from typing import Any
 
 from PIL import Image as Image_PIL
 from attrs import define, field
@@ -76,24 +76,22 @@ class Image(Differentiable):
     sort_flag: bool = field(default=None)
     reserved: int = field(default=None)
     local_color_table_flag: bool = field(default=None)
-    graphic_control_extension_index: int = field(default=None)
     background_color_index: int = field(default=None)
     size_of_local_color_table: int = field(default=None)
 
     # we think we don't need it
-    local_color_table_index: int = field(default=None)
-    plain_text_extension_index: int = field(default=None)
     img: Image_PIL.Image = field(default=None)
 
 
 @define
 class Gif(Differentiable):
+    structure: list[typing.Any]
     images: list[Image] = field(factory=list, repr=False)
     applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
     comments_extensions: list[CommentExtension] = field(factory=list, repr=False)
     graphic_control_extensions: list[GraphicControlExtension] = field(factory=list, repr=False)
     plain_text_extensions: list[PlainTextExtension] = field(factory=list, repr=False)
-    local_color_tables: list[Image_PIL.Image] = field(factory=list, repr=False)
+    local_color_tables: list[list[bytes]] = field(factory=list, repr=False)
 
     version: str = field(default=None)
     width: int = field(default=None)

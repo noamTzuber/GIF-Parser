@@ -52,13 +52,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
-            if len(gif_object.images) == 11:
-                i = 0
-            a = Image()
-            # for create new image we need to restart the creating image every time
-            a.image_indexes = []
-            a.image_data = []
-            gif_object.images.append(a)
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
@@ -125,6 +118,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     app_ex.data = application_data
     gif_object.add_application_extension(app_ex)
+    gif_object.structure.append(app_ex)
 
 
 def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -151,10 +145,11 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
         raise IncorrectFileFormat(f'Should be block terminator(0) but we read {block_terminator}')
 
     gif_object.graphic_control_extensions.append(graphic_control_ex)
+    gif_object.structure.append(graphic_control_ex)
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
-    current_image = gif_object.images[LAST_ELEMENT]
+    current_image = Image()
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -167,6 +162,9 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.reserved = gif_stream.read_unsigned_integer(2, 'bits')
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
 
+    gif_object.images.append(current_image)
+    gif_object.structure.append(current_image)
+
 
 def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image = gif_object.images[LAST_ELEMENT]
@@ -174,7 +172,7 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
 
     colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
-    current_image.local_color_table_index = len(gif_object.local_color_tables) - 1
+    gif_object.structure.append(colors_array)
 
 
 def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -264,6 +262,7 @@ def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
 
     comment_ex.data = data
     gif_object.comments_extensions.append(comment_ex)
+    gif_object.structure.append(comment_ex)
 
 
 def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -292,3 +291,4 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
 
     plain_text_ex.text_data = data
     gif_object.plain_text_extensions.append(plain_text_ex)
+    gif_object.structure.append(plain_text_ex)
