@@ -17,4 +17,4 @@ def color_table_processes(gif: Gif):
         else:
             new_structure.append(block)
 
-    return new_structure
+    gif.structure = new_structure
