@@ -3,6 +3,7 @@ from pprint import pprint
 
 import pickle
 
+import post_prossesing
 from decoder import decode_gif
 from gif_objects import Gif
 
@@ -16,6 +17,9 @@ def main(filename: str, *, show_image: bool = False, from_pickle: bool = False):
         for image in gif.images:
             image.img.show()
 
+    new_struct = post_prossesing.color_table_processes(gif)
+    print("check")
+
 
 if __name__ == '__main__':
-    main("gif_tests/test4.gif", show_image=True)
+    main("gif_tests/test4.gif", show_image=False)

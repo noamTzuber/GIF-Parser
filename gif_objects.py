@@ -85,7 +85,7 @@ class Image(Differentiable):
 
 @define
 class Gif(Differentiable):
-    structure: list[typing.Any]
+    structure: list[typing.Any] = field(factory=list, repr=False)
     images: list[Image] = field(factory=list, repr=False)
     applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
     comments_extensions: list[CommentExtension] = field(factory=list, repr=False)
@@ -100,7 +100,7 @@ class Gif(Differentiable):
     global_color_table_size: int = field(default=None)
     color_resolution: int = field(default=None)
     sort_flag: bool = field(default=None)
-    global_color_table: Image_PIL.Image = field(default=None, repr=False)
+    global_color_table: list[bytes] = field(default=None, repr=False)
     background_color_index: int = field(default=None)
     pixel_aspect_ratio: int = field(default=None)
 
