@@ -1,19 +1,40 @@
-import typing
-from dataclasses import dataclass, field
+from pprint import pprint
+from typing import Any
 
 from PIL import Image as Image_PIL
-from attrs import define, field, Factory
+from attrs import define, field
+from deepdiff import DeepDiff
+
+
+class IncorrectFileFormat(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class DifferentClasses(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class Differentiable:
+    def diff(self, other):
+        if type(self) != type(other):
+            raise DifferentClasses(f"different classes, this: {type(self)}, other: {type(other)}")
+        return DeepDiff(self, other)
+
+    def print_diff(self, other):
+        pprint(self.diff(other))
 
 
 @define
-class ApplicationExtension:
+class ApplicationExtension(Differentiable):
     application_name: str = None
     identify: str = None
     data: str = None
 
 
 @define
-class GraphicControlExtension:
+class GraphicControlExtension(Differentiable):
     disposal: int = field(default=None)
     reserved: int = field(default=None)
     user_input_flag: bool = field(default=None)
@@ -23,7 +44,7 @@ class GraphicControlExtension:
 
 
 @define
-class PlainTextExtension:
+class PlainTextExtension(Differentiable):
     top: int = field(default=None)
     left: int = field(default=None)
     width: int = field(default=None)
@@ -42,7 +63,7 @@ class CommentExtension:
 
 
 @define
-class Image:
+class Image(Differentiable):
     image_data: list[typing.Any] = field(factory=list, repr=False)
     image_indexes: list[typing.Any] = field(factory=list, repr=False)
 
@@ -66,7 +87,7 @@ class Image:
 
 
 @define
-class Gif:
+class Gif(Differentiable):
     images: list[Image] = field(factory=list, repr=False)
     applications_extensions: list[ApplicationExtension] = field(factory=list, repr=False)
     comments_extensions: list[CommentExtension] = field(factory=list, repr=False)
@@ -87,8 +108,3 @@ class Gif:
 
     def add_application_extension(self, extension):
         self.applications_extensions.append(extension)
-
-
-class IncorrectFileFormat(Exception):
-    def __init__(self, message):
-        super().__init__(message)
