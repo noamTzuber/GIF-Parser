@@ -1,8 +1,5 @@
 import math
 
-from PIL import Image as Image_PIL
-
-from bitstream import BitStream
 from bitstream_writer import BitStreamWriter
 from enums import BlockPrefix
 from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
@@ -10,7 +7,7 @@ from utils import chunker
 
 ApplicationExtensionBlockSize = 11
 GraphicControlExtensionBlockSize = 4
-BlockTerminator = b'00'
+PlainTextExtensionBlockSize = 4
 
 
 def write_gif(gif_object: Gif) -> BitStreamWriter:
@@ -19,15 +16,18 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
     write_header(gif_stream, gif_object)
     write_logical_screen_descriptor(gif_stream, gif_object)
 
+    if gif_object.global_color_table_size != 0:
+        write_global_color_table(gif_stream, gif_object.global_color_table)
+
     for block in gif_object.structure:
         if isinstance(block, Image):
-            write_image(block)
+            write_image(gif_stream, block)
         elif isinstance(block, CommentExtension):
             write_comment_extension(gif_stream, block)
         elif isinstance(block, PlainTextExtension):
             write_plain_text(gif_stream, block)
         elif isinstance(block, GraphicControlExtension):
-            write_plain_text(gif_stream, block)
+            write_graphic_control_extension(gif_stream, block)
         elif isinstance(block, ApplicationExtension):
             write_application_extension(gif_stream, block)
         else:
@@ -66,8 +66,8 @@ def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif
     gif_stream.write_unsigned_integer(pixel_ratio_value, 1, 'bytes')
 
 
-def write_global_color_table(gif_stream: BitStreamWriter, gif_object: Gif) -> None:
-    raise NotImplemented
+def write_global_color_table(gif_stream: BitStreamWriter, global_color_table: list[bytes]) -> None:
+    gif_stream.write_bytes(b''.join(global_color_table))
 
 
 def write_application_extension(gif_stream: BitStreamWriter, application_ex: ApplicationExtension) -> None:
@@ -84,7 +84,7 @@ def write_application_extension(gif_stream: BitStreamWriter, application_ex: App
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
 
-    gif_stream.write_bytes(BlockTerminator)
+    gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
 def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control_ex: GraphicControlExtension) -> None:
@@ -102,7 +102,7 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control
     gif_stream.write_unsigned_integer(graphic_control_ex.delay_time, 2, 'bytes')
     gif_stream.write_unsigned_integer(graphic_control_ex.transparent_index, 1, 'bytes')
 
-    gif_stream.write_bytes(BlockTerminator)
+    gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
 def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
@@ -122,8 +122,36 @@ def write_image_data(gif_stream: BitStreamWriter, image: Image) -> None:
 
 
 def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
-    raise NotImplemented
+    gif_stream.write_bytes(BlockPrefix.Extension.value)
+    gif_stream.write_bytes(BlockPrefix.CommentExtension.value)
+
+    # looping in chinks of 255 bytes
+    for sub_block in chunker(255, comment.data):
+        sub_block_size = len(sub_block)
+        gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
+        gif_stream.write_bytes(sub_block)
+
+    gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
 def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension) -> None:
-    raise NotImplemented
+    gif_stream.write_bytes(BlockPrefix.Extension.value)
+    gif_stream.write_bytes(BlockPrefix.PlainTextExtension.value)
+
+    gif_stream.write_unsigned_integer(PlainTextExtensionBlockSize, 1, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.left, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.top, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.width, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.height, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.char_width, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.char_height, 2, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.text_color, 1, 'bytes')
+    gif_stream.write_unsigned_integer(plain_text.background_color, 1, 'bytes')
+
+    # looping in chinks of 255 bytes
+    for sub_block in chunker(255, plain_text.data):
+        sub_block_size = len(sub_block)
+        gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
+        gif_stream.write_bytes(sub_block)
+
+    gif_stream.write_bytes(BlockPrefix.Terminator.value)

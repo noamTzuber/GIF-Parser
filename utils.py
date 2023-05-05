@@ -27,5 +27,10 @@ def chunker(size, seq):
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
-def reverse_chunks(s, k):
-    return ''.join(s[i:i + k][::-1] for i in range(0, len(s), k))
+def reverse_chunker(size, seq):
+    """
+    reverse_chunker(3, "ABCDEFG") -> "EFG" "BCD" "A"
+    reverse_chunker(4, "ABCDEFG") -> "DEFG" "ABC"
+    """
+    n = len(seq)
+    return (seq[n - pos - size: n - pos] for pos in range(0, n, size))

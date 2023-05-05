@@ -28,9 +28,9 @@ class Differentiable:
 
 @define
 class ApplicationExtension(Differentiable):
-    application_name: str = None
-    identify: str = None
-    data: str = None
+    application_name: str | None = None
+    identify: str | None = None
+    data: bytes | None = None
 
 
 @define
@@ -53,13 +53,13 @@ class PlainTextExtension(Differentiable):
     char_width: int = field(default=None)
     char_height: int = field(default=None)
     background_color: int = field(default=None)
-    text_color: str = field(default=None)
-    text_data: str = field(default=None)
+    text_color: int = field(default=None)
+    data: bytes = field(default=None)
 
 
 @define
 class CommentExtension:
-    data: int = field(default=None)
+    data: bytes = field(default=None)
 
 
 @define
@@ -72,7 +72,7 @@ class Image(Differentiable):
     width: int = field(default=None)
     height: int = field(default=None)
 
-    interlace_index: int = field(default=None)
+    interlace_flag: bool = field(default=None)
     sort_flag: bool = field(default=None)
     reserved: int = field(default=None)
     local_color_table_flag: bool = field(default=None)
@@ -105,7 +105,7 @@ class Gif(Differentiable):
     sort_flag: bool = field(default=None)
     global_color_table: list[bytes] = field(default=None, repr=False)
     background_color_index: int = field(default=None)
-    pixel_aspect_ratio: int = field(default=None)
+    pixel_aspect_ratio: float = field(default=None)
 
     def add_application_extension(self, extension):
         self.applications_extensions.append(extension)

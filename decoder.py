@@ -157,7 +157,7 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
     current_image.local_color_table_flag = gif_stream.read_bool()
-    current_image.interlace_index = gif_stream.read_bool()
+    current_image.interlace_flag = gif_stream.read_bool()
     current_image.sort_flag = gif_stream.read_bool()
     current_image.reserved = gif_stream.read_unsigned_integer(2, 'bits')
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
@@ -172,19 +172,15 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
 
     colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
-    gif_object.structure.append(colors_array)
+    current_image.local_colo_table = colors_array
 
 
 def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
-    """decode image data"""
     res = b''
     current_image = gif_object.images[LAST_ELEMENT]
-
     lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
 
     compressed_sub_block = b''
-
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
         compressed_sub_block += gif_stream.read_bytes(number_of_sub_block_bytes)
     res, index_length = decode_lzw(compressed_sub_block, lzw_minimum_code_size)
@@ -208,7 +204,7 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
 
-def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     if len(gif_object.images) > 1:
@@ -289,6 +285,6 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
         data += gif_stream.read_bytes(sub_block_size)
         sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
-    plain_text_ex.text_data = data
+    plain_text_ex.data = data
     gif_object.plain_text_extensions.append(plain_text_ex)
     gif_object.structure.append(plain_text_ex)
