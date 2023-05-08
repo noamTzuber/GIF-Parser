@@ -11,10 +11,10 @@ def color_table_processes(gif: Gif):
         block = gif.structure[i]
         if isinstance(block, Image):
             if block.local_color_table_flag:
-                block.local_colo_table = gif.structure[i + 1]
+                block.local_color_table = gif.structure[i + 1]
                 i += 1
             else:
-                block.local_colo_table = gif.global_color_table
+                block.local_color_table = gif.global_color_table
             new_structure.append(block)
         else:
             new_structure.append(block)

@@ -83,7 +83,8 @@ class Image(Differentiable):
     img: Image_PIL.Image = field(default=None)
 
     # for post-processing only
-    local_colo_table: list[bytes] = field(default=None)
+    local_color_table: list[bytes] = field(default=None)
+    lzw_minimum_code_size: int = field(default=None)
 
 
 @define

@@ -172,18 +172,18 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
 
     colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
-    current_image.local_colo_table = colors_array
+    current_image.local_color_table = colors_array
 
 
 def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
     res = b''
     current_image = gif_object.images[LAST_ELEMENT]
-    lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
+    current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
 
     compressed_sub_block = b''
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
         compressed_sub_block += gif_stream.read_bytes(number_of_sub_block_bytes)
-    res, index_length = decode_lzw(compressed_sub_block, lzw_minimum_code_size)
+    res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
 
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
