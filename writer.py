@@ -105,7 +105,6 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control
 
 
 def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
-
     # Image Descriptor
     gif_stream.write_bytes(BlockPrefix.ImageDescriptor.value)
     gif_stream.write_unsigned_integer(image.left, 2, 'bytes')
@@ -125,7 +124,7 @@ def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
 
     # Image Data
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
-    # need to change: get the data after the lzw algorithm presses.
+    # TODO: need to change: get the data after the lzw algorithm presses.
     data = image.image_data
     # looping in chunks of 255 bytes
     for sub_block in chunker(255, data):
