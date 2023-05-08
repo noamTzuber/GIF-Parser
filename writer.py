@@ -46,8 +46,7 @@ def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif
     gif_stream.write_unsigned_integer(gif_object.height, 2, 'bytes')
 
     # if global color table exist
-    # global_color_table_exist = gif_object.global_color_table_size != 0
-    global_color_table_exist = False
+    global_color_table_exist = gif_object.global_color_table_size != 0
     gif_stream.write_bool(global_color_table_exist)
 
     # both not relevant
