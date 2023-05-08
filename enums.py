@@ -8,6 +8,7 @@ class BlockPrefix(Enum):
     CommentExtension = b'\xFE'
     PlainTextExtension = b'\x01'
     ApplicationExtension = b'\xFF'
+    Terminator = b'\x00'
     NONE = b''
 
     @classmethod

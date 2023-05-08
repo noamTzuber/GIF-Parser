@@ -6,16 +6,16 @@ import bitstring
 class BitStream:
     def __init__(self, stream: bitstring.ConstBitStream) -> None:
         super().__init__()
-        self.stream = stream
+        self._stream = stream
 
     def read_bytes(self, n_bytes: int) -> bytes:
-        return self.stream.read(f"bytes:{n_bytes}")
+        return self._stream.read(f"bytes:{n_bytes}")
 
     def read_decoded(self, n_bytes: int, encoding='utf-8', errors='strict') -> str:
-        return self.stream.read(f"bytes:{n_bytes}").decode(encoding, errors)
+        return self._stream.read(f"bytes:{n_bytes}").decode(encoding, errors)
 
     def read_bool(self) -> bool:
-        return self.stream.read(f"bool")
+        return self._stream.read(f"bool")
 
     def read_unsigned_integer(self, n: int, unit: Literal['bits', 'bytes']) -> int:
         """
@@ -24,9 +24,9 @@ class BitStream:
         """
 
         if unit == "bits":
-            return self.stream.read(f"uint:{n}")
+            return self._stream.read(f"uint:{n}")
         elif unit == "bytes":
-            return self.stream.read(f"uintle:{n * 8}")
+            return self._stream.read(f"uintle:{n * 8}")
         else:
             raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")
 
@@ -35,9 +35,9 @@ class BitStream:
 
         """
         if unit == "bits":
-            return self.stream.read(f"hex:{n}")
+            return self._stream.read(f"hex:{n}")
         elif unit == "bytes":
-            return self.stream.read(f"hex:{n * 8}")
+            return self._stream.read(f"hex:{n * 8}")
         else:
             raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")
 
@@ -46,8 +46,8 @@ class BitStream:
 
         """
         if unit == "bits":
-            self.stream.read(f"pad:{n}")
+            self._stream.read(f"pad:{n}")
         elif unit == "bytes":
-            self.stream.read(f"pad:{n * 8}")
+            self._stream.read(f"pad:{n * 8}")
         else:
             raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")

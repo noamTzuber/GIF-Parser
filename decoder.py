@@ -8,7 +8,7 @@ from PIL import Image as Image_PIL
 from bitstream import BitStream
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
-    IncorrectFileFormat
+    IncorrectFileFormat, CommentExtension
 from lzw import decode_lzw
 
 LAST_ELEMENT = -1
@@ -52,13 +52,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_plain_text(gif_stream, gif_object)
 
         elif prefix is BlockPrefix.ImageDescriptor:
-            if len(gif_object.images) == 11:
-                i = 0
-            a = Image()
-            # for create new image we need to restart the creating image every time
-            a.image_indexes = []
-            a.image_data = []
-            gif_object.images.append(a)
             decode_image_descriptor(gif_stream, gif_object)
 
             # Check if there is a Local color table for this image.
@@ -83,8 +76,8 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     global_color_table_exist = gif_stream.read_bool()
 
     # both not relevant
-    resolution = gif_stream.read_unsigned_integer(3, 'bits')
-    is_ordered = gif_stream.read_bool()
+    gif_object.color_resolution = gif_stream.read_unsigned_integer(3, 'bits')
+    gif_object.sort_flag = gif_stream.read_bool()
 
     global_color_table_size_value = gif_stream.read_unsigned_integer(3, 'bits')
     if global_color_table_exist:
@@ -95,7 +88,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     gif_object.background_color_index = gif_stream.read_unsigned_integer(1, 'bytes')
 
     pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
-    pixel_ratio = (pixel_ratio_value + 15) / 64
+    gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
 
 
 def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -125,6 +118,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
 
     app_ex.data = application_data
     gif_object.add_application_extension(app_ex)
+    gif_object.structure.append(app_ex)
 
 
 def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -132,9 +126,11 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
 
     # always 4 bytes
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
+    if block_size != 4:
+        raise IncorrectFileFormat(f'graphic control extension size should be 4 not {block_size}')
 
     # flags from Packed Fields
-    reserved_bits = gif_stream.read_unsigned_integer(3, "bits")
+    graphic_control_ex.reserved = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.disposal = gif_stream.read_unsigned_integer(3, "bits")
     graphic_control_ex.user_input_flag = gif_stream.read_bool()
     graphic_control_ex.transparent_color_flag = gif_stream.read_bool()
@@ -149,10 +145,11 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
         raise IncorrectFileFormat(f'Should be block terminator(0) but we read {block_terminator}')
 
     gif_object.graphic_control_extensions.append(graphic_control_ex)
+    gif_object.structure.append(graphic_control_ex)
 
 
 def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
-    current_image = gif_object.images[LAST_ELEMENT]
+    current_image = Image()
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -160,15 +157,13 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
     current_image.local_color_table_flag = gif_stream.read_bool()
-    current_image.interlace_index = gif_stream.read_bool()
-
-    # those attributes are not necessary for the gif
-    sort_flag = gif_stream.read_bool()
-
-    # skipping 2 bits
-    gif_stream.skip(2, 'bits')
-
+    current_image.interlace_flag = gif_stream.read_bool()
+    current_image.sort_flag = gif_stream.read_bool()
+    current_image.reserved = gif_stream.read_unsigned_integer(2, 'bits')
     current_image.size_of_local_color_table = gif_stream.read_unsigned_integer(3, 'bits')
+
+    gif_object.images.append(current_image)
+    gif_object.structure.append(current_image)
 
 
 def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -177,22 +172,18 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
 
     colors_array = [gif_stream.read_bytes(3) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
-    current_image.local_color_table_index = len(gif_object.local_color_tables) - 1
+    current_image.local_color_table = colors_array
 
 
 def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
-    """decode image data"""
     res = b''
     current_image = gif_object.images[LAST_ELEMENT]
-
-    lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    index_length = math.ceil(math.log(lzw_minimum_code_size + 1)) + 1
+    current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
 
     compressed_sub_block = b''
-
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
         compressed_sub_block += gif_stream.read_bytes(number_of_sub_block_bytes)
-    res, index_length = decode_lzw(compressed_sub_block, lzw_minimum_code_size)
+    res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
 
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
@@ -213,7 +204,7 @@ def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
 
-def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL:
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     if len(gif_object.images) > 1:
@@ -257,12 +248,17 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
 
 def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     """decode comment extension"""
+    comment_ex = CommentExtension()
     data = b''
     # every sub block start with a bye that present the size of it.
     sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
     while sub_block_size != 0:  # Change to Block Terminator enum
         data += gif_stream.read_bytes(sub_block_size)
         sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
+
+    comment_ex.data = data
+    gif_object.comments_extensions.append(comment_ex)
+    gif_object.structure.append(comment_ex)
 
 
 def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
@@ -289,5 +285,6 @@ def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
         data += gif_stream.read_bytes(sub_block_size)
         sub_block_size = gif_stream.read_unsigned_integer(1, "bytes")
 
-    plain_text_ex.text_data = data
+    plain_text_ex.data = data
     gif_object.plain_text_extensions.append(plain_text_ex)
+    gif_object.structure.append(plain_text_ex)
