@@ -1,22 +1,35 @@
+import io
 import pickle
 from pathlib import Path
 from typing import Literal
 
+import writer
 from decoder import decode_gif
 from gif_objects import Gif
 
 
-def check_file(path: Path, *, show_image: bool = False):
+def check_write(path: Path):
+    with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
+        saved_gif: Gif = pickle.load(pickle_file)
+
+    saved_gif_bytes = writer.write_gif(saved_gif)
+    as_io = io.BytesIO(saved_gif_bytes._stream.bytes)
+    gif = decode_gif(as_io)
+
     with open(path, "rb") as gif_file:
         current: Gif = decode_gif(gif_file)
 
+    print(f"file {path.stem} correctness: {current == saved_gif}")
+
+
+def check_read(path: Path):
     with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
         saved: Gif = pickle.load(pickle_file)
 
+    with open(path, "rb") as gif_file:
+        current: Gif = decode_gif(gif_file)
+
     print(f"file {path.stem} correctness: {current == saved}")
-    if show_image:
-        for img in current.images:
-            img.img.show()
 
 
 def save_file(path: Path):
@@ -33,16 +46,22 @@ def save_file(path: Path):
         print(e)
 
 
-def test_gifs(*, mode: Literal['save', 'check'], files: list[str] = None, show_image: bool = False):
+def test_gifs(*, mode: Literal['save', 'check_read', 'check_write'], files: list[str] = None):
     if files or files == []:
-        path_list = [Path(f"gif_tests/{str}.gif") for str in files]
+        path_list = [Path('gif_tests', str).with_suffix('.gif') for str in files]
     else:
-        path_list = Path("gif_tests/").rglob('*.gif')
+        path_list = Path('gif_tests/').rglob('*.gif')
 
     for path in path_list:
-        if mode == 'check':
+        if mode == 'check_read':
             if path.with_suffix('.pickle').exists():
-                check_file(path, show_image=show_image)
+                check_read(path)
+            else:
+                print(f"file {path.stem} has no pickle")
+
+        if mode == 'check_write':
+            if path.with_suffix('.pickle').exists():
+                check_write(path)
             else:
                 print(f"file {path.stem} has no pickle")
         elif mode == 'save':
@@ -50,4 +69,4 @@ def test_gifs(*, mode: Literal['save', 'check'], files: list[str] = None, show_i
 
 
 if __name__ == '__main__':
-    test_gifs(mode='check', files=['test4'], show_image=False)
+    test_gifs(mode='check_write', files=['test4'])

@@ -5,7 +5,7 @@ import typing
 import bitstring
 from PIL import Image as Image_PIL
 
-from bitstream import BitStream
+from bitstream_reader import BitStreamReader
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
     IncorrectFileFormat, CommentExtension
@@ -18,7 +18,7 @@ PENULTIMATE = -2
 
 def decode_gif(io: typing.BinaryIO) -> Gif:
     gif_object: Gif = Gif()
-    gif_stream: BitStream = BitStream(bitstring.ConstBitStream(io))
+    gif_stream: BitStreamReader = BitStreamReader(bitstring.ConstBitStream(io))
 
     decode_header(gif_stream, gif_object)
     decode_logical_screen_descriptor(gif_stream, gif_object)
@@ -65,11 +65,11 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
     return gif_object
 
 
-def decode_header(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_header(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     gif_object.version = gif_stream.read_decoded(6)
 
 
-def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_logical_screen_descriptor(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     gif_object.width = gif_stream.read_unsigned_integer(2, 'bytes')
     gif_object.height = gif_stream.read_unsigned_integer(2, 'bytes')
 
@@ -91,7 +91,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStream, gif_object: Gif) -> 
     gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
 
 
-def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_global_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     """
     Decode global color table.
     We read the number of bytes we received in the flag in Logical Screen Descriptor,
@@ -101,7 +101,7 @@ def decode_global_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
         int(gif_object.global_color_table_size))]
 
 
-def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_application_extension(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     app_ex = ApplicationExtension()
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
@@ -121,7 +121,7 @@ def decode_application_extension(gif_stream: BitStream, gif_object: Gif) -> None
     gif_object.structure.append(app_ex)
 
 
-def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     graphic_control_ex = GraphicControlExtension()
 
     # always 4 bytes
@@ -148,7 +148,7 @@ def decode_graphic_control_extension(gif_stream: BitStream, gif_object: Gif) -> 
     gif_object.structure.append(graphic_control_ex)
 
 
-def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_image_descriptor(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     current_image = Image()
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -166,7 +166,7 @@ def decode_image_descriptor(gif_stream: BitStream, gif_object: Gif) -> None:
     gif_object.structure.append(current_image)
 
 
-def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_local_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     current_image = gif_object.images[LAST_ELEMENT]
     size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
 
@@ -175,7 +175,7 @@ def decode_local_color_table(gif_stream: BitStream, gif_object: Gif) -> None:
     current_image.local_color_table = colors_array
 
 
-def decode_image_data(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     res = b''
     current_image = gif_object.images[LAST_ELEMENT]
     current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
@@ -246,7 +246,7 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
     return img
 
 
-def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_comment_extension(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     """decode comment extension"""
     comment_ex = CommentExtension()
     data = b''
@@ -261,7 +261,7 @@ def decode_comment_extension(gif_stream: BitStream, gif_object: Gif) -> None:
     gif_object.structure.append(comment_ex)
 
 
-def decode_plain_text(gif_stream: BitStream, gif_object: Gif) -> None:
+def decode_plain_text(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     plain_text_ex = PlainTextExtension()
 
     # Read the block size (always 12)

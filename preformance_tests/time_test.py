@@ -2,6 +2,7 @@ import time
 import typing
 from typing import List, Callable
 
+import attrs
 from attrs import define, field
 
 from utils import chunker
@@ -12,14 +13,11 @@ class Result:
     name: str = field(eq=False)
     runs: int = field(eq=False)
     total_time: float = field(eq=False)
-    out: typing.Any = field(eq=True)
+    out: typing.Any = field(eq=True, repr=False)
+    average: float = field(init=False, eq=False, on_setattr=attrs.setters.NO_OP)
 
-    @property
-    def average(self):
-        return self.total_time / self.runs
-
-    def __repr__(self):
-        return f"{self.name}, {self.runs} runs, total: {self.total_time}, average: {self.average}"
+    def __attrs_post_init__(self):
+        self.average = self.total_time / self.runs
 
 
 def time_function(n_runs: int, function: Callable, args, kwargs) -> Result:

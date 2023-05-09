@@ -1,5 +1,5 @@
 from typing import Literal
-
+from bitstream_reader import BitStreamReader
 import bitstring
 
 

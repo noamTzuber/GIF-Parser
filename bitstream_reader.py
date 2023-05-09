@@ -3,10 +3,13 @@ from typing import Literal
 import bitstring
 
 
-class BitStream:
-    def __init__(self, stream: bitstring.ConstBitStream) -> None:
+class BitStreamReader:
+    def __init__(self, stream: bitstring.ConstBitStream | None = None) -> None:
         super().__init__()
-        self._stream = stream
+        if stream:
+            self._stream = stream
+        else:
+            self._stream = bitstring.ConstBitStream()
 
     def read_bytes(self, n_bytes: int) -> bytes:
         return self._stream.read(f"bytes:{n_bytes}")
