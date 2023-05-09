@@ -9,7 +9,8 @@ class BlockPrefix(Enum):
     PlainTextExtension = b'\x01'
     ApplicationExtension = b'\xFF'
     Terminator = b'\x00'
-    NONE = b''
+    Trailer = b'\x3b'
+    NONE = b''  # Not of the above
 
     @classmethod
     def _missing_(cls, value):

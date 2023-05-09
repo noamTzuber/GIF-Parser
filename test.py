@@ -12,14 +12,13 @@ def check_write(path: Path):
     with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
         saved_gif: Gif = pickle.load(pickle_file)
 
+    for image in saved_gif.images:
+        image.image_data = []
     saved_gif_bytes = writer.write_gif(saved_gif)
     as_io = io.BytesIO(saved_gif_bytes._stream.bytes)
     gif = decode_gif(as_io)
 
-    with open(path, "rb") as gif_file:
-        current: Gif = decode_gif(gif_file)
-
-    print(f"file {path.stem} correctness: {current == saved_gif}")
+    saved_gif.print_diff(gif)
 
 
 def check_read(path: Path):

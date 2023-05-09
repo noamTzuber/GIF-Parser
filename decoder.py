@@ -27,14 +27,10 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
     if gif_object.global_color_table_size != 0:
         decode_global_color_table(gif_stream, gif_object)
 
-    while True:
-
-        # Read the first byte to check if the next block is extension or image descriptor.
-        extension_introducer: bytes = gif_stream.read_bytes(1)
-        prefix = BlockPrefix(extension_introducer)
+    # Read the first byte to check if the next block is extension or image descriptor.
+    while (prefix := BlockPrefix(gif_stream.read_bytes(1))) != BlockPrefix.Trailer:
 
         if prefix is BlockPrefix.Extension:
-
             # Check which type of extension is the next block.
             extension_label: bytes = gif_stream.read_bytes(1)
             prefix = BlockPrefix(extension_label)
@@ -60,7 +56,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
             decode_image_data(gif_stream, gif_object)
         elif prefix is BlockPrefix.NONE:
-            break
+            raise Exception("prefix is incorrect")
 
     return gif_object
 
@@ -183,6 +179,10 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     compressed_sub_block = b''
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:
         compressed_sub_block += gif_stream.read_bytes(number_of_sub_block_bytes)
+    if not compressed_sub_block:
+        current_image.img = None
+        return
+
     res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
 
     if current_image.local_color_table_flag:

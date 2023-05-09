@@ -33,6 +33,7 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
         else:
             raise Exception("not a gif object in structure")
 
+    gif_stream.write_bytes(BlockPrefix.Trailer.value)
     return gif_stream
 
 
@@ -126,11 +127,15 @@ def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
     # TODO: need to change: get the data after the lzw algorithm presses.
     data = b''.join(image.image_data)
-    # looping in chunks of 255 bytes
-    for sub_block in chunker(255, data):
-        sub_block_size = len(sub_block)
-        gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
-        gif_stream.write_bytes(sub_block)
+
+    if not data:
+        gif_stream.write_unsigned_integer(0, 1, 'bytes')
+    else:
+        # looping in chunks of 255 bytes
+        for sub_block in chunker(255, data):
+            sub_block_size = len(sub_block)
+            gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
+            gif_stream.write_bytes(sub_block)
 
 
 def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
