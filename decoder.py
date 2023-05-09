@@ -29,7 +29,6 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
     # Read the first byte to check if the next block is extension or image descriptor.
     while (prefix := BlockPrefix(gif_stream.read_bytes(1))) != BlockPrefix.Trailer:
-
         if prefix is BlockPrefix.Extension:
             # Check which type of extension is the next block.
             extension_label: bytes = gif_stream.read_bytes(1)
