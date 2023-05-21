@@ -3,12 +3,19 @@ import math
 from bitstream_writer import BitStreamWriter
 from enums import BlockPrefix
 from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
+from lzw import convert_int_to_bits, encode
 from utils import chunker
 
 ApplicationExtensionBlockSize = 11
 GraphicControlExtensionBlockSize = 4
 PlainTextExtensionBlockSize = 4
 
+def index_from_data(image_data, color_table):
+    size_of_index = math.ceil(math.log(len(color_table), 2)) + 1
+    indexes = [convert_int_to_bits(color_table.index(color), size_of_index) for color in image_data]
+    res = b''.join(indexes)
+    hex_string ='0x' + hex(int(res.decode('utf-8'), 2))[2:]
+    return hex_string
 
 def write_gif(gif_object: Gif) -> BitStreamWriter:
     gif_stream = BitStreamWriter()
@@ -21,7 +28,10 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
 
     for block in gif_object.structure:
         if isinstance(block, Image):
-            write_image(gif_stream, block)
+            if block.local_color_table_flag:
+                write_image(gif_stream, block, block.local_color_table)
+            else:
+                write_image(gif_stream, block, gif_object.global_color_table)
         elif isinstance(block, CommentExtension):
             write_comment_extension(gif_stream, block)
         elif isinstance(block, PlainTextExtension):
@@ -83,6 +93,7 @@ def write_application_extension(gif_stream: BitStreamWriter, application_ex: App
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -105,7 +116,7 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
-def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
+def write_image(gif_stream: BitStreamWriter, image: Image, color_table:list[bytes]) -> None:
     # Image Descriptor
     gif_stream.write_bytes(BlockPrefix.ImageDescriptor.value)
     gif_stream.write_unsigned_integer(image.left, 2, 'bytes')
@@ -126,7 +137,8 @@ def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
     # Image Data
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
     # TODO: need to change: get the data after the lzw algorithm presses.
-    data = b''.join(image.image_data)
+    data = index_from_data(image.image_data, color_table)
+    data = encode(data, len(color_table))
 
     if not data:
         gif_stream.write_unsigned_integer(0, 1, 'bytes')
@@ -136,6 +148,7 @@ def write_image(gif_stream: BitStreamWriter, image: Image) -> None:
             sub_block_size = len(sub_block)
             gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
             gif_stream.write_bytes(sub_block)
+        gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
 
 def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
@@ -147,6 +160,7 @@ def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtensi
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -170,5 +184,6 @@ def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)

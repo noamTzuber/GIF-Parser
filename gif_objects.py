@@ -64,7 +64,7 @@ class CommentExtension:
 
 @define
 class Image(Differentiable):
-    image_data: list[typing.Any] = field(factory=list, repr=False)
+    image_data: list[bytes] = field(factory=list, repr=False)
     image_indexes: list[typing.Any] = field(factory=list, repr=False)
 
     top: int = field(default=None)
