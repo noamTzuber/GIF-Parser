@@ -54,6 +54,10 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
                 decode_local_color_table(gif_stream, gif_object)
 
             decode_image_data(gif_stream, gif_object)
+
+            if gif_object.graphic_control_extensions[gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
+                gif_object.images.append(gif_object.images[PENULTIMATE])
+
         elif prefix is BlockPrefix.NONE:
             raise Exception("prefix is incorrect")
 
@@ -145,6 +149,7 @@ def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gi
 
 def decode_image_descriptor(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     current_image = Image()
+    current_image.index_graphic_control_ex = len(gif_object.graphic_control_extensions) - 1
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')

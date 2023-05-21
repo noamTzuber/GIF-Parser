@@ -86,6 +86,8 @@ class Image(Differentiable):
     local_color_table: list[bytes] = field(default=None)
     lzw_minimum_code_size: int = field(default=None)
 
+    index_graphic_control_ex: int = field(default=None)
+
 
 @define
 class Gif(Differentiable):
