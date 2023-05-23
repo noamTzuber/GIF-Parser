@@ -12,13 +12,12 @@ def check_write(path: Path):
     with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
         saved_gif: Gif = pickle.load(pickle_file)
 
-    for image in saved_gif.images:
-        image.image_data = []
     saved_gif_bytes = writer.write_gif(saved_gif)
     as_io = io.BytesIO(saved_gif_bytes._stream.bytes)
     gif = decode_gif(as_io)
 
     saved_gif.print_diff(gif)
+    print(f"checked write for {path.stem}")
 
 
 def check_read(path: Path):
