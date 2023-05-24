@@ -1,3 +1,4 @@
+import io
 import math
 
 import bitstring
@@ -21,25 +22,11 @@ def convert_int_to_bits(number, code_size):
 
 
 def initialize_code_table(color_table_size, is_decode):
-    """
-    creating the base table for the known value
-    :param color_table_size:
-    :return: table
-    """
-    table_size = color_table_size
-    table = {str(i): i for i in range(color_table_size)}
-    # adding the number for clear code
-    table[str(table_size)] = table_size
-    table_size += 1
-    # adding the number for end_of_information
-    table[str(table_size)] = table_size
-    table_size += 1
-
-    # in decode we need to flip the table for the opposite process
+    # init table with dict, clear code and eof
     if is_decode:
-        table = {val: key for key, val in table.items()}
-
-    return table
+        return {i: str(i) for i in range(color_table_size + 2)}
+    else:
+        return {str(i): i for i in range(color_table_size + 2)}
 
 
 def update_code_size(table_size, code_size):
@@ -179,15 +166,11 @@ def encode(uncompressed_data, color_table_size):
     return res
 
 
-def get_decode_element(stream, reading_size):
-    """
-    the next element represent in as string number
-    :param stream:
-    :param reading_size:
-    :return: element
-    """
+def read_next_uint(stream, reading_size) -> int:
     stream.pos -= reading_size
-    return stream.read(f'uint{reading_size}')
+    value: int = stream.read(f'uint{reading_size}')
+    stream.pos -= reading_size
+    return value
 
 
 def index_to_binary(element, writing_size):
@@ -255,47 +238,42 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
 
     stream = ConstBitStream(compressed_data[::-1])
 
-    bits = bitstring.BitArray(compressed_data)
-    for bit_index in range(0, bits.length, 8):
-        bits.reverse(bit_index, bit_index + 8)
-    stream2 = ConstBitStream(bits)
+    # bits = bitstring.BitArray(compressed_data)
+    # for bit_index in range(0, bits.length, 8):
+    #     bits.reverse(bit_index, bit_index + 8)
+    # stream2 = ConstBitStream(bits)
 
     stream.pos = stream.length
-    first_element = get_decode_element(stream, reading_size, pos)
-    pos = pos - reading_size
+    first_element = read_next_uint(stream, reading_size)
 
     if first_element != clear_code:
         print("the image was corrupted")
         return -1
 
-    decompressed_data = b''
-    curr_el = get_decode_element(stream, reading_size, pos)
-    pos = pos - reading_size
-    decompressed_data += index_to_binary(table[curr_el], writing_size)
+    decompressed_data = io.BytesIO()
+    curr_el = read_next_uint(stream, reading_size)
+    decompressed_data.write(index_to_binary(table[curr_el], writing_size))
     while True:
-        next_el = get_decode_element(stream, reading_size, pos)
+        next_el = read_next_uint(stream, reading_size)
         if next_el == end_of_information_code:
             break
         if next_el == clear_code:
             table = initialize_code_table(int(color_table_size), True)
             reading_size = lzw_minimum_code_size + 1
-            pos = pos - reading_size
-            curr_el = get_decode_element(stream, reading_size, pos)
-            decompressed_data += index_to_binary(table[curr_el], writing_size)
-            pos = pos - reading_size
+            curr_el = read_next_uint(stream, reading_size)
+            decompressed_data.write(index_to_binary(table[curr_el], writing_size))
 
             continue
 
         if next_el in table:
-            decompressed_data += index_to_binary(table[next_el], writing_size)
+            decompressed_data.write(index_to_binary(table[next_el], writing_size))
             k = get_first_element(table[next_el])
         else:
             k = get_first_element(table[curr_el])
-            decompressed_data += index_to_binary(table[curr_el] + "," + k, writing_size)
+            decompressed_data.write(index_to_binary(table[curr_el] + "," + k, writing_size))
 
         table[len(table)] = table[curr_el] + "," + k
         reading_size = update_code_size1(len(table), reading_size)
-        pos = pos - reading_size
         curr_el = next_el
 
-    return decompressed_data, writing_size
+    return decompressed_data.getvalue(), writing_size
