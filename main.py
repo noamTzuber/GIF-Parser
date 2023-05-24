@@ -9,9 +9,9 @@ def main(filename: str, *, show_image: bool = False):
         gif: Gif = decode_gif(gif_file)
         print("decoded")
 
-    with open("result.gif", "wb") as f:
-        res = write_gif(gif)
-        res._stream.tofile(f)
+    # with open("result.gif", "wb") as f:
+    #     res = write_gif(gif)
+    #     res._stream.tofile(f)
 
     # with open(filename, "rb") as gif_file:
     #     original = bitstring.ConstBitStream(gif_file)
@@ -28,4 +28,4 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/test4.gif", show_image=False)
+    main("gif_tests/test4.gif", show_image=True)

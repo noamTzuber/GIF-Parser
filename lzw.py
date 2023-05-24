@@ -67,9 +67,8 @@ def flip_data(compress_data):
         fliped_data += compress_data[-8:]
         compress_data = compress_data[:-8]
 
-    bytes_object = fliped_data.encode("utf-8")
 
-    return bytes_object
+    return fliped_data.encode("utf-8")
 
 
 def get_encode_element(stream, reading_size):
@@ -190,8 +189,7 @@ def get_decode_element(stream, reading_size, pos):
     :return: element
     """
     stream.pos = pos
-    element = stream.read('bin' + str(reading_size))
-    return int(element, 2)
+    return stream.read(f'uint{reading_size}')
 
 
 def index_to_binary(element, writing_size):
@@ -257,17 +255,7 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     #  add the enf of reading
     end_of_information_code = int(table[(len(table) - 1)])
 
-    #bytes_object = bytes.fromhex(compressed_data)
-    bytes_object = compressed_data
-
-    # Convert bytes object to binary string with leading zeros
-    binary_string = ''.join(format(byte, '08b') for byte in bytes_object)
-
-    compressed_data = flip_data(binary_string)
-    data_length = len(compressed_data)
-    compressed_data = hex(int(compressed_data, 2))
-    compressed_data = fill_zero_hexa(compressed_data, data_length)
-    stream = ConstBitStream(compressed_data)
+    stream = ConstBitStream(compressed_data[::-1])
     pos = stream.length - reading_size
     first_element = get_decode_element(stream, reading_size, pos)
     pos = pos - reading_size
