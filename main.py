@@ -9,14 +9,6 @@ def main(filename: str, *, show_image: bool = False):
         gif: Gif = decode_gif(gif_file)
         print("decoded")
 
-    # with open(filename, "rb") as gif_file:
-    #     original = bitstring.ConstBitStream(gif_file)
-    #
-    # with open("result.gif", "rb") as gif_file:
-    #     saved: Gif = decode_gif(gif_file)
-
-    # saved.print_diff(gif)
-
     pprint(gif)
     if show_image:
         for image in gif.images:
