@@ -166,7 +166,7 @@ def encode(uncompressed_data, color_table_size):
     return res
 
 
-def read_next_uint(stream, reading_size) -> int:
+def get_decode_element(stream, reading_size) -> int:
     stream.pos -= reading_size
     value: int = stream.read(f'uint{reading_size}')
     stream.pos -= reading_size
@@ -244,23 +244,23 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     # stream2 = ConstBitStream(bits)
 
     stream.pos = stream.length
-    first_element = read_next_uint(stream, reading_size)
+    first_element = get_decode_element(stream, reading_size)
 
     if first_element != clear_code:
         print("the image was corrupted")
         return -1
 
     decompressed_data = io.BytesIO()
-    curr_el = read_next_uint(stream, reading_size)
+    curr_el = get_decode_element(stream, reading_size)
     decompressed_data.write(index_to_binary(table[curr_el], writing_size))
     while True:
-        next_el = read_next_uint(stream, reading_size)
+        next_el = get_decode_element(stream, reading_size)
         if next_el == end_of_information_code:
             break
         if next_el == clear_code:
             table = initialize_code_table(int(color_table_size), True)
             reading_size = lzw_minimum_code_size + 1
-            curr_el = read_next_uint(stream, reading_size)
+            curr_el = get_decode_element(stream, reading_size)
             decompressed_data.write(index_to_binary(table[curr_el], writing_size))
 
             continue
