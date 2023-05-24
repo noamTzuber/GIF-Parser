@@ -34,3 +34,10 @@ def reverse_chunker(size, seq):
     """
     n = len(seq)
     return (seq[n - pos - size: n - pos] for pos in range(0, n, size))
+
+
+def string_comp(s1: str, s2: str):
+    for i, (c1, c2) in enumerate(zip_longest(s1, s2)):
+        if c1 != c2:
+            print(f"diff in index {i}\n1:{s1[i - 30:i + 30]}\n2:{s2[i - 30:i + 8]}")
+            return
