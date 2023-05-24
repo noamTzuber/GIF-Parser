@@ -10,12 +10,12 @@ ApplicationExtensionBlockSize = 11
 GraphicControlExtensionBlockSize = 4
 PlainTextExtensionBlockSize = 4
 
-
 def index_from_data(image_data, color_table):
     size_of_index = math.ceil(math.log(len(color_table), 2)) + 1
     indexes = [convert_int_to_bits(color_table.index(color), size_of_index) for color in image_data]
-    res = b''.join(indexes)
-    hex_string = '0x' + hex(int(res.decode('utf-8'), 2))[2:]
+    res = b''.join(indexes).decode('utf-8')
+    hex_string = '0x' + format(int(res, 2), '0{0}x'.format(len(res) // 4))
+
     return hex_string
 
 
@@ -138,7 +138,7 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table: list[byt
     # Image Data
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
     # TODO: need to change: get the data after the lzw algorithm presses.
-    data = index_from_data(image.image_data, color_table)
+    data = index_from_data(image.raw_data, color_table)
     hex_string = ''.join(data)
 
     encoded = encode(hex_string, len(color_table))
