@@ -138,11 +138,10 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table: list[byt
     # Image Data
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
     # TODO: need to change: get the data after the lzw algorithm presses.
-    # data = index_from_data(image.image_data, color_table)
-    # hex_string = ''.join(data)
+    data = index_from_data(image.image_data, color_table)
+    hex_string = ''.join(data)
 
-    # encoded = encode(hex_string, len(color_table))
-    encoded = image.raw_data
+    encoded = encode(hex_string, len(color_table))
 
     if not encoded:
         gif_stream.write_unsigned_integer(0, 1, 'bytes')
