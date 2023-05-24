@@ -188,7 +188,6 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
         return
 
     res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
-    current_image.raw_data = res
 
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
@@ -197,6 +196,7 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
 
     for pos in range(0, len(res), index_length):
         current_index = int((res[pos:pos + index_length]), 2)
+
         if (current_index == gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_index and
                 gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_color_flag):
             # current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
@@ -205,6 +205,7 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
         else:
             # current_image.image_indexes.append(current_index)
             current_image.image_data.append(local_color_table[current_index])
+        current_image.raw_data.append(local_color_table[current_index])
 
     current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
