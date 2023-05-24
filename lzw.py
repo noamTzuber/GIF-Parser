@@ -1,5 +1,6 @@
 import math
 
+import bitstring
 from bitstring import ConstBitStream
 import binascii
 
@@ -67,7 +68,6 @@ def flip_data(compress_data):
         fliped_data += compress_data[-8:]
         compress_data = compress_data[:-8]
 
-
     return fliped_data.encode("utf-8")
 
 
@@ -120,7 +120,6 @@ def encode(uncompressed_data, color_table_size):
     # notice the reding size in constant - not change
     reading_size = math.ceil(math.log2(color_table_size)) + 1
 
-
     table = initialize_code_table(color_table_size, False)
 
     # if the next item in the table will need to be writen with more bit change now the writing size
@@ -166,7 +165,6 @@ def encode(uncompressed_data, color_table_size):
             writing_size = update_code_size(len(table), writing_size)
             curr_el = next_el
 
-
     # add the last element to the output
     compress_data = convert_int_to_bits(table[curr_el], writing_size) + compress_data
 
@@ -181,14 +179,14 @@ def encode(uncompressed_data, color_table_size):
     return res
 
 
-def get_decode_element(stream, reading_size, pos):
+def get_decode_element(stream, reading_size):
     """
     the next element represent in as string number
     :param stream:
     :param reading_size:
     :return: element
     """
-    stream.pos = pos
+    stream.pos -= reading_size
     return stream.read(f'uint{reading_size}')
 
 
@@ -256,7 +254,13 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     end_of_information_code = int(table[(len(table) - 1)])
 
     stream = ConstBitStream(compressed_data[::-1])
-    pos = stream.length - reading_size
+
+    bits = bitstring.BitArray(compressed_data)
+    for bit_index in range(0, bits.length, 8):
+        bits.reverse(bit_index, bit_index + 8)
+    stream2 = ConstBitStream(bits)
+
+    stream.pos = stream.length
     first_element = get_decode_element(stream, reading_size, pos)
     pos = pos - reading_size
 
@@ -273,7 +277,6 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
         if next_el == end_of_information_code:
             break
         if next_el == clear_code:
-
             table = initialize_code_table(int(color_table_size), True)
             reading_size = lzw_minimum_code_size + 1
             pos = pos - reading_size
@@ -287,7 +290,7 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
             decompressed_data += index_to_binary(table[next_el], writing_size)
             k = get_first_element(table[next_el])
         else:
-            k =get_first_element(table[curr_el])
+            k = get_first_element(table[curr_el])
             decompressed_data += index_to_binary(table[curr_el] + "," + k, writing_size)
 
         table[len(table)] = table[curr_el] + "," + k
