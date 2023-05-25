@@ -5,6 +5,7 @@
 # Custom
 .idea/*
 ./main.py
+./**/*.pickle
 
 # User-specific stuff
 .idea/**/workspace.xml
