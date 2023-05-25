@@ -1,5 +1,5 @@
-from typing import Literal
-from bitstream_reader import BitStreamReader
+from typing import Literal, BinaryIO
+
 import bitstring
 
 
@@ -14,6 +14,10 @@ class BitStreamWriter:
     def _insert(self, bits: bitstring.Bits) -> None:
         self._stream.append(bits)
 
+    @property
+    def stream(self):
+        return self._stream
+
     def write_bytes(self, input_byte: bytes) -> None:
         bits = bitstring.Bits(bytes=input_byte)
         self._insert(bits)
@@ -23,45 +27,32 @@ class BitStreamWriter:
         self._insert(bits)
 
     def write_unsigned_integer(self, input_num: int, length: int, unit: Literal['bits', 'bytes']) -> None:
-        """
-
-        """
         if unit == "bits":
             bits = bitstring.Bits(uint=input_num, length=length)
         elif unit == "bytes":
             bits = bitstring.Bits(uintle=input_num, length=8 * length)
         else:
-            raise Exception("incorrect Unit passed, can be 'bits' or 'bytes'")
+            raise ValueError("incorrect Unit passed, can be 'bits' or 'bytes'")
         self._insert(bits)
 
     def write_hex(self, input_hex: str, bytes_length: int) -> None:
-        """
-
-        """
         bits = bitstring.Bits(hex=input_hex, length=bytes_length)
         self._insert(bits)
 
-    def skip(self, n: int, unit: Literal['bits', 'bytes']):
-        """
+    def skip(self, length: int, unit: Literal['bits', 'bytes']):
+        if unit == "bits":
+            bits = bitstring.Bits(uint=0, length=length)
+        elif unit == "bytes":
+            bits = bitstring.Bits(uintle=0, length=8 * length)
+        else:
+            raise ValueError("incorrect Unit passed, can be 'bits' or 'bytes'")
+        self._insert(bits)
 
-        """
-        raise NotImplemented
-
-    def to_file(self) -> None:
-        raise NotImplemented
+    def to_file(self, file: BinaryIO) -> None:
+        self._stream.tofile(file)
 
     def __repr__(self):
         return repr(self._stream)
 
     def __str__(self):
         return str(self._stream)
-
-
-
-
-if __name__ == '__main__':
-    stream = BitStreamWriter()
-    stream.write_bool(False)
-    stream.write_unsigned_integer(10, 2, 'bytes')
-    stream.write_hex('A3F3', 3)
-    print(stream._stream.bin)

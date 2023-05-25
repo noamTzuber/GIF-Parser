@@ -29,9 +29,7 @@ def check_read(path: Path):
 
     print(f"file {path.stem} correctness: {current == saved}")
 
-def load_gif(path: Path) -> Gif:
-    with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
-        return pickle.load(pickle_file)
+
 
 
 def save_file(path: Path):
