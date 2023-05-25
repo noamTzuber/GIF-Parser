@@ -29,6 +29,10 @@ def check_read(path: Path):
 
     print(f"file {path.stem} correctness: {current == saved}")
 
+def load_gif(path: Path) -> Gif:
+    with open(path.with_suffix('.pickle'), 'rb') as pickle_file:
+        return pickle.load(pickle_file)
+
 
 def save_file(path: Path):
     try:
@@ -67,4 +71,4 @@ def test_gifs(*, mode: Literal['save', 'check_read', 'check_write'], files: list
 
 
 if __name__ == '__main__':
-    test_gifs(mode='check_write', files=['test4'])
+    test_gifs(mode='save', files=['giphy2'])
