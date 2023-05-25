@@ -9,7 +9,8 @@ def main(filename: str, *, show_image: bool = False):
         print("decoded")
 
     if show_image:
-        for image in gif.images:
+        print("showing images (first 5)")
+        for image in gif.images[:5]:
             image.img.show()
 
     with open("result.gif", "wb") as f:
@@ -19,4 +20,4 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/giphy.gif", show_image=True)
+    main("gif_tests/giphy.gif", show_image=False)
