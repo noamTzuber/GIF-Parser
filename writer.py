@@ -1,6 +1,6 @@
 import math
 
-from bitstream_writer import BitStreamWriter
+from BitStream import BitStreamWriter
 from enums import BlockPrefix
 from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
 from lzw import convert_int_to_bits, encode

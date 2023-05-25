@@ -5,7 +5,7 @@ import typing
 import bitstring
 from PIL import Image as Image_PIL
 
-from bitstream_reader import BitStreamReader
+from BitStream import BitStreamReader
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
     IncorrectFileFormat, CommentExtension
