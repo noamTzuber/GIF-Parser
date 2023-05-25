@@ -55,7 +55,8 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
             decode_image_data(gif_stream, gif_object)
 
-            if gif_object.graphic_control_extensions[gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
+            if gif_object.graphic_control_extensions[
+                gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
                 gif_object.images.append(gif_object.images[PENULTIMATE])
 
         elif prefix is BlockPrefix.NONE:
@@ -213,6 +214,9 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
 def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
+    gif_size = current_image.width * current_image.height
+    assert gif_size == len(image_data), f"size mismatch: gif_size {gif_size} does not match the length of image_information {len(image_data)}"
+
     if len(gif_object.images) > 1:
         arr = [TRANSPARENT_VALUE] * gif_object.width * gif_object.height
         start_current_image = current_image.top * gif_object.width + current_image.left

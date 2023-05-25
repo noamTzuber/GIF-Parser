@@ -95,6 +95,7 @@ def write_application_extension(gif_stream: BitStreamWriter, application_ex: App
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -117,7 +118,7 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
-def write_image(gif_stream: BitStreamWriter, image: Image, color_table: list[bytes]) -> None:
+def write_image(gif_stream: BitStreamWriter, image: Image, color_table:list[bytes]) -> None:
     # Image Descriptor
     gif_stream.write_bytes(BlockPrefix.ImageDescriptor.value)
     gif_stream.write_unsigned_integer(image.left, 2, 'bytes')
@@ -151,8 +152,7 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table: list[byt
             sub_block_size = len(sub_block)
             gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
             gif_stream.write_bytes(sub_block)
-
-        gif_stream.write_bytes(BlockPrefix.Terminator.value)
+        gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
 
 def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
@@ -164,6 +164,7 @@ def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtensi
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -187,5 +188,6 @@ def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
+    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
