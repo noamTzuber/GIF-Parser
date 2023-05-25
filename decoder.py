@@ -5,7 +5,7 @@ import typing
 import bitstring
 from PIL import Image as Image_PIL
 
-from bitstream_reader import BitStreamReader
+from BitStream import BitStreamReader
 from enums import BlockPrefix
 from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
     IncorrectFileFormat, CommentExtension
@@ -55,7 +55,8 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
             decode_image_data(gif_stream, gif_object)
 
-            if gif_object.graphic_control_extensions[gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
+            if gif_object.graphic_control_extensions[
+                gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
                 gif_object.images.append(gif_object.images[PENULTIMATE])
 
         elif prefix is BlockPrefix.NONE:
