@@ -1,6 +1,5 @@
-from pprint import pprint
-
-from decoder import *
+from decoder import decode_gif
+from gif_objects import Gif
 from writer import write_gif
 
 
@@ -9,14 +8,13 @@ def main(filename: str, *, show_image: bool = False):
         gif: Gif = decode_gif(gif_file)
         print("decoded")
 
-    pprint(gif)
     if show_image:
         for image in gif.images:
             image.img.show()
 
     with open("result.gif", "wb") as f:
         res = write_gif(gif)
-        res._stream.tofile(f)
+        res.to_file(f)
         print("saved")
 
 
