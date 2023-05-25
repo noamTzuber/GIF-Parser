@@ -4,7 +4,6 @@
 
 # Custom
 .idea/*
-./run_file.py
 /**/*.pickle
 
 # User-specific stuff
