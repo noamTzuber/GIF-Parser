@@ -142,7 +142,7 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table:list[byte
     data = index_from_data(image.raw_data, color_table)
     hex_string = ''.join(data)
 
-    encoded = encode(hex_string, len(color_table))
+    encoded = encode(hex_string, len(color_table), image.reset_size)
 
     if not encoded:
         gif_stream.write_unsigned_integer(0, 1, 'bytes')
