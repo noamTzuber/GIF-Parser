@@ -165,9 +165,11 @@ def encode(uncompressed_data, color_table_size):
 
     # x = flip_data_enc(fill_zero_bytes(compress_data).decode('utf-8'))
     # fill zeros to be represented by 8 bits and flip the data
+    # TODO: instead of flipping data, byteswap (build in function in bitstring)
     x = flip_data(fill_zero_bytes(compress_data).decode('utf-8'))
     hex_str = binascii.hexlify(int(x, 2).to_bytes((len(x) + 7) // 8, 'big')).decode()
     res = bytes.fromhex(hex_str)
+    # TODO: return BitArray.bytes so we can write (maybe even as BitArray)
     return res
 
 
