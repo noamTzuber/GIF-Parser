@@ -143,7 +143,8 @@ def encode(uncompressed_data, color_table_size, reset_size):
                 writing_size = update_code_size(len(table), reading_size)
                 curr_el = next_el
                 continue
-            # add the new concat to the table
+
+                # add the new concat to the table
             table[current_and_next] = len(table)
             # write the compressed value to the output
             compress_data = convert_int_to_bits(table[curr_el], writing_size) + compress_data
@@ -153,7 +154,9 @@ def encode(uncompressed_data, color_table_size, reset_size):
             curr_el = next_el
 
     # add the last element to the output
+
     compress_data = convert_int_to_bits(table[curr_el], writing_size) + compress_data
+
 
     # add the end to the output - for inform that is the end ot the data
     compress_data = convert_int_to_bits(end_of_information_code, writing_size) + compress_data
@@ -258,7 +261,7 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
         if next_el == end_of_information_code:
             break
         if next_el == clear_code:
-            resert_size = len(table)
+            reset_size = len(table)
             table = initialize_code_table(int(color_table_size), True)
             reading_size = lzw_minimum_code_size + 1
             curr_el = get_decode_element(stream, reading_size)
@@ -277,4 +280,4 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
         reading_size = update_code_size1(len(table), reading_size)
         curr_el = next_el
 
-    return decompressed_data.getvalue(), writing_size, resert_size
+    return decompressed_data.getvalue(), writing_size, reset_size

@@ -190,12 +190,14 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
 
     res, index_length, reset_size = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
     current_image.reset_size = reset_size
-
+    
+    current_image.raw_indexes = compressed_sub_block
+    
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
     else:
         local_color_table = gif_object.global_color_table
-
+    
     for pos in range(0, len(res), index_length):
         current_index = int((res[pos:pos + index_length]), 2)
 
