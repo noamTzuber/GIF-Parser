@@ -13,11 +13,11 @@ def main(filename: str, *, show_image: bool = False):
         for image in gif.images[:5]:
             image.img.show()
 
-    with open("result.gif", "wb") as f:
-        res = write_gif(gif)
+    res = write_gif(gif)
+    with open("result2.gif", "wb") as f:
         res.to_file(f)
-        print("saved")
+    print("saved")
 
 
 if __name__ == '__main__':
-    main("gif_tests/giphy.gif", show_image=False)
+    main("gif_tests/simple/gifi.gif", show_image=False)

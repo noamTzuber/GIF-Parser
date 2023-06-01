@@ -1,5 +1,7 @@
 import math
 
+import bitstring
+
 from BitStream import BitStreamWriter
 from enums import BlockPrefix
 from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
@@ -13,10 +15,10 @@ PlainTextExtensionBlockSize = 4
 
 def index_from_data(image_data, color_table):
     size_of_index = math.ceil(math.log(len(color_table), 2)) + 1
-    indexes = [convert_int_to_bits(color_table.index(color), size_of_index) for color in image_data]
-    res = b''.join(indexes)
-    hex_string = '0x' + hex(int(res.decode('utf-8'), 2))[2:]
-    return hex_string
+    data = bitstring.BitArray()
+    for color in image_data:
+        data.append(f"uint:{size_of_index}={color_table.index(color)}")
+    return data
 
 
 def write_gif(gif_object: Gif) -> BitStreamWriter:
@@ -139,9 +141,8 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table: list[byt
     gif_stream.write_unsigned_integer(image.lzw_minimum_code_size, 1, 'bytes')
     # TODO: need to change: get the data after the lzw algorithm presses.
     data = index_from_data(image.image_data, color_table)
-    hex_string = ''.join(data)
 
-    encoded = encode(hex_string, len(color_table))
+    encoded = encode(data, len(color_table))
 
     if not encoded:
         gif_stream.write_unsigned_integer(0, 1, 'bytes')

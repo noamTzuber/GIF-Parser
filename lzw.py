@@ -65,6 +65,8 @@ def get_encode_element(stream, reading_size):
     :param reading_size:
     :return: element
     """
+
+
     element = stream.read('bin' + str(reading_size))
     return str(int(element, 2))
 
@@ -117,8 +119,10 @@ def encode(uncompressed_data, color_table_size):
     clear_code = table[str(len(table) - 2)]
     #  add the enf of reading (in our example = 5)
     end_of_information_code = table[str(len(table) - 1)]
+    # TODO: switch to bitstring.BitArray
     compress_data = b''
     #  add clear code according the reading size (in our example = 4)
+    # TODO: pls use bitstring conversion (Bits)
     compress_data += convert_int_to_bits(clear_code, writing_size)
 
     length = stream.length
@@ -136,6 +140,7 @@ def encode(uncompressed_data, color_table_size):
             curr_el = current_and_next
         else:
             if len(table) == 4096:
+                # TODO: Switch to prepend of bitstring.BitArray
                 compress_data = convert_int_to_bits(table[curr_el], 12) + compress_data
                 compress_data = convert_int_to_bits(clear_code, 12) + compress_data
                 reading_size = math.ceil(math.log2(color_table_size)) + 1
