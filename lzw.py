@@ -66,7 +66,7 @@ def get_encode_element(stream, reading_size):
     :return: element
     """
 
-
+    # TODO: switch to f"uint{reading_size}", that will return it as int
     element = stream.read('bin' + str(reading_size))
     return str(int(element, 2))
 
@@ -140,9 +140,13 @@ def encode(uncompressed_data, color_table_size):
             curr_el = current_and_next
         else:
             if len(table) == 4096:
-                # TODO: Switch to prepend of bitstring.BitArray
+                # TODO: Switch to prepend of bitstring.BitArray,
+                #  you can do prepend(f"uint:{size}={value}"),
+                #  i suggest switching convert_int_to_bits to add_to_stream and inside to prepend as above
                 compress_data = convert_int_to_bits(table[curr_el], 12) + compress_data
                 compress_data = convert_int_to_bits(clear_code, 12) + compress_data
+                # TODO: this line is probably unnecessary since its the same as init of reading_size and all values are
+                #  unchanged (but check me)
                 reading_size = math.ceil(math.log2(color_table_size)) + 1
                 table = initialize_code_table(color_table_size, False)
                 writing_size = update_code_size(len(table), reading_size)
@@ -165,7 +169,8 @@ def encode(uncompressed_data, color_table_size):
 
     # x = flip_data_enc(fill_zero_bytes(compress_data).decode('utf-8'))
     # fill zeros to be represented by 8 bits and flip the data
-    # TODO: instead of flipping data, byteswap (build in function in bitstring)
+    # TODO: instead of flipping data, byteswap (build in function in bitstring),
+    #  flipping bytes is faster then converting to bits, flipping in chunks of 8, and returning to bytes
     x = flip_data(fill_zero_bytes(compress_data).decode('utf-8'))
     hex_str = binascii.hexlify(int(x, 2).to_bytes((len(x) + 7) // 8, 'big')).decode()
     res = bytes.fromhex(hex_str)
