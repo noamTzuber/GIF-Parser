@@ -20,4 +20,6 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/test4.gif", show_image=False)
+    # i = ["simple/gifi.gif","simple/gifi1.gif","simple/gifi2.gif","simple/gifi3.gif"]
+    # for gi in i :
+    main("gif_tests/simple/gifi.gif", show_image=False)
