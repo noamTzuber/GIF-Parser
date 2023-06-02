@@ -40,7 +40,7 @@ def main(filename: str, *, show_image: bool = False):
         choice = input("would you like to open saved pickle file? [y/n]: ")
         if choice == "y":
             gif = load_gif_from_pickle(path)
-        elif choice == "N":
+        elif choice == "n":
             gif = read_gif(path)
             save_gif_to_pickle(path, gif)
         else:
@@ -59,4 +59,4 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/giphy.gif", show_image=False)
+    main("gif_tests/test4.gif", show_image=False)
