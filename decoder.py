@@ -16,8 +16,9 @@ TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
 
 
-def decode_gif(io: typing.BinaryIO) -> Gif:
+def decode_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
     gif_object: Gif = Gif()
+
     gif_stream: BitStreamReader = BitStreamReader(bitstring.ConstBitStream(io))
 
     decode_header(gif_stream, gif_object)
@@ -53,7 +54,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
             if gif_object.images[LAST_ELEMENT].local_color_table_flag:
                 decode_local_color_table(gif_stream, gif_object)
 
-            decode_image_data(gif_stream, gif_object)
+            decode_image_data(gif_stream, gif_object, create_images)
 
             if gif_object.graphic_control_extensions[
                 gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
@@ -176,7 +177,7 @@ def decode_local_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> No
     current_image.local_color_table = colors_array
 
 
-def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
+def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_images: bool) -> None:
     res = b''
     current_image = gif_object.images[LAST_ELEMENT]
     current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
@@ -209,11 +210,11 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
             # current_image.image_indexes.append(current_index)
             current_image.image_data.append(local_color_table[current_index])
         current_image.raw_data.append(local_color_table[current_index])
+    if create_images:
+        create_img(gif_object, current_image.image_data, current_image.width, current_image.height, create_images)
 
-    current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
-
-def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL.Image:
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int, create_images: bool) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     gif_size = current_image.width * current_image.height
@@ -263,7 +264,7 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
             pixels[row, column] = (r, g, b)
 
-    return img
+    current_image.img = img
 
 
 def decode_comment_extension(gif_stream: BitStreamReader, gif_object: Gif) -> None:
