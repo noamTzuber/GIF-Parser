@@ -59,4 +59,5 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/test5.gif", show_image=False)
+    for i in ["test1.gif"]:
+        main("gif_tests/" + i, show_image=False)
