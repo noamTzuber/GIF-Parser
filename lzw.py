@@ -3,7 +3,12 @@ import math
 
 import bitstring
 from bitstring import ConstBitStream
+from bitstring import BitArray
 import binascii
+
+RESET_SIZE = 4096
+MAX_WRITING_SIZE = 12
+BYTE_LEN = 8
 
 
 # the example we using here:
@@ -50,10 +55,10 @@ def flip_data(compress_data):
     :return: fliped_data
     """
     fliped_data = ''
-    length = len(compress_data) / 8
+    length = len(compress_data) / BYTE_LEN
     for i in range(int(length)):
-        fliped_data += compress_data[-8:]
-        compress_data = compress_data[:-8]
+        fliped_data += compress_data[-BYTE_LEN:]
+        compress_data = compress_data[:-BYTE_LEN]
 
     return fliped_data.encode("utf-8")
 
@@ -65,8 +70,8 @@ def get_encode_element(stream, reading_size):
     :param reading_size:
     :return: element
     """
-    element = stream.read('bin' + str(reading_size))
-    return str(int(element, 2))
+    element = stream.read(f"uint{reading_size}")
+    return str(element)
 
 
 def fill_zero_bytes(compress_data):
@@ -75,9 +80,58 @@ def fill_zero_bytes(compress_data):
     :param: compress_data:
     :return: compress_data
     """
-    if zero_fill := len(compress_data) % 8:
-        compress_data = convert_int_to_bits(0, 8 - zero_fill) + compress_data
+    if zero_fill := len(compress_data) % BYTE_LEN:
+        compress_data = convert_int_to_bits(0, BYTE_LEN - zero_fill) + compress_data
     return compress_data
+
+
+def bitstring_to_bytes(bitstring):
+    hex_str = binascii.hexlify(int(bitstring, 2).to_bytes((len(bitstring) + 7) // BYTE_LEN, 'big')).decode()
+    return bytes.fromhex(hex_str)
+
+
+def get_decode_element(stream, reading_size) -> int:
+    stream.pos -= reading_size
+    value: int = stream.read(f'uint{reading_size}')
+    stream.pos -= reading_size
+    return value
+
+
+def index_to_binary(element, writing_size):
+    return bytes(''.join([bin(int(val))[2:].zfill(writing_size) for val in element.split(',')]), 'utf-8')
+
+
+def fill_zero_hexa(hexa_data, binary_data_len):
+    """
+    fill the data with zero in start that will divide by 8 - for hexa representing
+    :param hexa_data:
+    :return: binary_data_len
+    """
+    while len(hexa_data[2:]) < binary_data_len / 4:
+        hexa_data = '0x0' + hexa_data[2:]
+    return hexa_data
+
+
+def update_code_size1(table_size, code_size):
+    """
+    check if we need to increase the writing window if the table size +1 is representing binary more than the
+    current writing window size
+    :param table_size:
+    :param writing_size:
+    :return: writing_size:
+    """
+    if table_size == int(math.pow(2, code_size)) and code_size < MAX_WRITING_SIZE:
+        return code_size + 1
+    return code_size
+
+
+def get_first_element(concats_colors):
+    comma_index = concats_colors.find(",")
+    if comma_index != -1:
+        result = concats_colors[:comma_index]
+    else:
+        result = concats_colors
+    return result
 
 
 def encode(uncompressed_data, color_table_size):
@@ -119,6 +173,7 @@ def encode(uncompressed_data, color_table_size):
     end_of_information_code = table[str(len(table) - 1)]
     compress_data = b''
     #  add clear code according the reading size (in our example = 4)
+
     compress_data += convert_int_to_bits(clear_code, writing_size)
 
     length = stream.length
@@ -135,10 +190,9 @@ def encode(uncompressed_data, color_table_size):
         if current_and_next in table:
             curr_el = current_and_next
         else:
-            if len(table) == 4096:
-                compress_data = convert_int_to_bits(table[curr_el], 12) + compress_data
-                compress_data = convert_int_to_bits(clear_code, 12) + compress_data
-                reading_size = math.ceil(math.log2(color_table_size)) + 1
+            if len(table) == RESET_SIZE:
+                compress_data = convert_int_to_bits(table[curr_el], MAX_WRITING_SIZE) + compress_data
+                compress_data = convert_int_to_bits(clear_code, MAX_WRITING_SIZE) + compress_data
                 table = initialize_code_table(color_table_size, False)
                 writing_size = update_code_size(len(table), reading_size)
                 curr_el = next_el
@@ -156,61 +210,14 @@ def encode(uncompressed_data, color_table_size):
     # add the last element to the output
 
     compress_data = convert_int_to_bits(table[curr_el], writing_size) + compress_data
-
-
     # add the end to the output - for inform that is the end ot the data
     compress_data = convert_int_to_bits(end_of_information_code, writing_size) + compress_data
 
-    # x = flip_data_enc(fill_zero_bytes(compress_data).decode('utf-8'))
+    # flipped_data = flip_data_enc(fill_zero_bytes(compress_data).decode('utf-8'))
     # fill zeros to be represented by 8 bits and flip the data
-    x = flip_data(fill_zero_bytes(compress_data).decode('utf-8'))
-    hex_str = binascii.hexlify(int(x, 2).to_bytes((len(x) + 7) // 8, 'big')).decode()
-    res = bytes.fromhex(hex_str)
-    return res
+    flipped_data = flip_data(fill_zero_bytes(compress_data).decode('utf-8'))
 
-
-def get_decode_element(stream, reading_size) -> int:
-    stream.pos -= reading_size
-    value: int = stream.read(f'uint{reading_size}')
-    stream.pos -= reading_size
-    return value
-
-
-def index_to_binary(element, writing_size):
-    return bytes(''.join([bin(int(val))[2:].zfill(writing_size) for val in element.split(',')]), 'utf-8')
-
-
-def fill_zero_hexa(hexa_data, binary_data_len):
-    """
-    fill the data with zero in start that will divide by 8 - for hexa representing
-    :param hexa_data:
-    :return: binary_data_len
-    """
-    while len(hexa_data[2:]) < binary_data_len / 4:
-        hexa_data = '0x0' + hexa_data[2:]
-    return hexa_data
-
-
-def update_code_size1(table_size, code_size):
-    """
-    check if we need to increase the writing window if the table size +1 is representing binary more than the
-    current writing window size
-    :param table_size:
-    :param writing_size:
-    :return: writing_size:
-    """
-    if table_size == int(math.pow(2, code_size)) and code_size < 12:
-        return code_size + 1
-    return code_size
-
-
-def get_first_element(concats_colors):
-    comma_index = concats_colors.find(",")
-    if comma_index != -1:
-        result = concats_colors[:comma_index]
-    else:
-        result = concats_colors
-    return result
+    return bitstring_to_bytes(flipped_data)
 
 
 def decode_lzw(compressed_data, lzw_minimum_code_size):
@@ -227,7 +234,6 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     :param color_table_size:
     :return: compress_data:
     """
-    reset_size = 4096
     writing_size = lzw_minimum_code_size
     reading_size = writing_size + 1
     color_table_size = math.pow(2, lzw_minimum_code_size)
@@ -241,11 +247,6 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     end_of_information_code = int(table[(len(table) - 1)])
 
     stream = ConstBitStream(compressed_data[::-1])
-
-    # bits = bitstring.BitArray(compressed_data)
-    # for bit_index in range(0, bits.length, 8):
-    #     bits.reverse(bit_index, bit_index + 8)
-    # stream2 = ConstBitStream(bits)
 
     decompressed_data = io.BytesIO()
 
@@ -269,8 +270,8 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
             continue
 
         if next_el in table:
-            decompressed_data.write(index_to_binary(table[next_el], writing_size))
             k = get_first_element(table[next_el])
+            decompressed_data.write(index_to_binary(table[next_el], writing_size))
         else:
             k = get_first_element(table[curr_el])
             decompressed_data.write(index_to_binary(table[curr_el] + "," + k, writing_size))

@@ -11,6 +11,7 @@ ApplicationExtensionBlockSize = 11
 GraphicControlExtensionBlockSize = 4
 PlainTextExtensionBlockSize = 4
 
+
 def index_from_data(image_data, color_table):
     size_of_index = math.ceil(math.log(len(color_table), 2)) + 1
     data = bitstring.BitArray()
@@ -27,7 +28,6 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
 
     if gif_object.global_color_table_size != 0:
         write_global_color_table(gif_stream, gif_object.global_color_table)
-    i = 0
     for block in gif_object.structure:
         if isinstance(block, Image):
             if block.local_color_table_flag:
