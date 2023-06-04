@@ -220,10 +220,12 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
     assert gif_size == len(image_data), f"size mismatch: gif_size {gif_size} does not match the length of image_information {len(image_data)}"
 
     if len(gif_object.images) > 1:
+        # create new image with -1
         arr = [TRANSPARENT_VALUE] * gif_object.width * gif_object.height
         start_current_image = current_image.top * gif_object.width + current_image.left
-        rows = 0
+           
         # add the colors from the image data that we extract from lzw
+        rows = 0
         for pos in range(0, len(image_data), width):
             arr[start_current_image + rows: start_current_image + rows + width] = image_data[pos:pos + width]
             rows += gif_object.width
@@ -231,8 +233,9 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
         #  complete the lats line - what is left from the image data
         arr[start_current_image + rows: start_current_image + len(image_data) - pos] = image_data[pos:len(image_data)]
         rows += gif_object.width
-        last_image = gif_object.images[PENULTIMATE]
+
         # for all the indexes that don't have value or transparent-value , we take the data from the last image
+        last_image = gif_object.images[PENULTIMATE]
         current_image.image_data = (
             [arr[i] if arr[i] != TRANSPARENT_VALUE else last_image.image_data[i] for i in range(len(arr))]
         )

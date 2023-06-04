@@ -59,4 +59,4 @@ def main(filename: str, *, show_image: bool = False):
 
 
 if __name__ == '__main__':
-    main("gif_tests/test11.gif", show_image=False)
+    main("gif_tests/test5.gif", show_image=False)
