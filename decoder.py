@@ -188,8 +188,7 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
         current_image.img = None
         return
 
-    res, index_length, reset_size = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
-    current_image.reset_size = reset_size
+    res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
     
     current_image.raw_indexes = compressed_sub_block
     
@@ -256,7 +255,6 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
             hex_color = rgb_array[column * gif_object.width + row]
             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
             pixels[row, column] = (r, g, b)
-    img.show()
     return img
 
 

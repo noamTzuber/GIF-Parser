@@ -80,7 +80,7 @@ def fill_zero_bytes(compress_data):
     return compress_data
 
 
-def encode(uncompressed_data, color_table_size, reset_size):
+def encode(uncompressed_data, color_table_size):
     """
     using lzw algorithm for compress data ang gif images
     the table code look like this:
@@ -135,7 +135,7 @@ def encode(uncompressed_data, color_table_size, reset_size):
         if current_and_next in table:
             curr_el = current_and_next
         else:
-            if len(table) == reset_size:
+            if len(table) == 4096:
                 compress_data = convert_int_to_bits(table[curr_el], 12) + compress_data
                 compress_data = convert_int_to_bits(clear_code, 12) + compress_data
                 reading_size = math.ceil(math.log2(color_table_size)) + 1
@@ -247,22 +247,20 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
     #     bits.reverse(bit_index, bit_index + 8)
     # stream2 = ConstBitStream(bits)
 
-    stream.pos = stream.length
-    first_element = get_decode_element(stream, reading_size)
-
-    if first_element != clear_code:
-        print("the image was corrupted")
-        return -1
-
     decompressed_data = io.BytesIO()
+
+    stream.pos = stream.length
     curr_el = get_decode_element(stream, reading_size)
+    # if the gif start with clear_code we need continue to the next value
+    if curr_el == clear_code:
+        curr_el = get_decode_element(stream, reading_size)
+
     decompressed_data.write(index_to_binary(table[curr_el], writing_size))
     while True:
         next_el = get_decode_element(stream, reading_size)
         if next_el == end_of_information_code:
             break
         if next_el == clear_code:
-            reset_size = len(table)
             table = initialize_code_table(int(color_table_size), True)
             reading_size = lzw_minimum_code_size + 1
             curr_el = get_decode_element(stream, reading_size)
@@ -281,4 +279,4 @@ def decode_lzw(compressed_data, lzw_minimum_code_size):
         reading_size = update_code_size1(len(table), reading_size)
         curr_el = next_el
 
-    return decompressed_data.getvalue(), writing_size, reset_size
+    return decompressed_data.getvalue(), writing_size
