@@ -5,6 +5,8 @@
 # Custom
 .idea/*
 /**/*.pickle
+/**/*.rar
+/**/*.zip
 
 # User-specific stuff
 .idea/**/workspace.xml
