@@ -1,10 +1,11 @@
 import math
 
-from BitStream import BitStreamWriter
 import bitstring
+
+from BitStream import BitStreamWriter
 from enums import BlockPrefix
 from gif_objects import Gif, ApplicationExtension, GraphicControlExtension, Image, CommentExtension, PlainTextExtension
-from lzw import convert_int_to_bits, encode
+from lzw import encode
 from utils import chunker
 
 ApplicationExtensionBlockSize = 11
@@ -95,7 +96,6 @@ def write_application_extension(gif_stream: BitStreamWriter, application_ex: App
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
-    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -143,17 +143,16 @@ def write_image(gif_stream: BitStreamWriter, image: Image, color_table:list[byte
     # hex_string = ''.join(data)
 
     encoded = encode(data, len(color_table))
+    # encoded = image.raw_indexes
 
-
-    if not encoded:
-        gif_stream.write_unsigned_integer(0, 1, 'bytes')
-    else:
+    if encoded:
         # looping in chunks of 255 bytes
         for sub_block in chunker(255, encoded):
             sub_block_size = len(sub_block)
             gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
             gif_stream.write_bytes(sub_block)
-        gif_stream.write_unsigned_integer(0, 1, 'bytes')
+
+    gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
 
 def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtension) -> None:
@@ -165,7 +164,6 @@ def write_comment_extension(gif_stream: BitStreamWriter, comment: CommentExtensi
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
-    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
 
@@ -189,6 +187,5 @@ def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension
         sub_block_size = len(sub_block)
         gif_stream.write_unsigned_integer(sub_block_size, 1, 'bytes')
         gif_stream.write_bytes(sub_block)
-    gif_stream.write_unsigned_integer(0, 1, 'bytes')
 
     gif_stream.write_bytes(BlockPrefix.Terminator.value)
