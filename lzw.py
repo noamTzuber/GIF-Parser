@@ -96,7 +96,11 @@ def bitstring_to_bytes(bitstring):
 
 
 def get_decode_element(stream, reading_size) -> int:
+    if stream.pos - reading_size <= 0:
+        reading_size = stream.pos
+
     stream.pos -= reading_size
+
     value: int = stream.read(f'uint{reading_size}')
     stream.pos -= reading_size
     return value
