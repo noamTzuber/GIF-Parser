@@ -16,8 +16,9 @@ TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
 
 
-def decode_gif(io: typing.BinaryIO) -> Gif:
+def decode_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
     gif_object: Gif = Gif()
+
     gif_stream: BitStreamReader = BitStreamReader(bitstring.ConstBitStream(io))
 
     decode_header(gif_stream, gif_object)
@@ -53,7 +54,7 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
             if gif_object.images[LAST_ELEMENT].local_color_table_flag:
                 decode_local_color_table(gif_stream, gif_object)
 
-            decode_image_data(gif_stream, gif_object)
+            decode_image_data(gif_stream, gif_object, create_images)
 
             last_graphic_control_index = gif_object.images[LAST_ELEMENT].index_graphic_control_ex
             last_graphic_control_disposal = gif_object.graphic_control_extensions[last_graphic_control_index].disposal
@@ -235,36 +236,49 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
             # current_image.image_indexes.append(current_index)
             current_image.image_data.append(local_color_table[current_index])
         current_image.raw_data.append(local_color_table[current_index])
+    if create_images:
+        create_img(gif_object, current_image.image_data, current_image.width, current_image.height, create_images)
 
-    current_image.img = create_img(gif_object, current_image.image_data, current_image.width, current_image.height)
 
-
-def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) -> Image_PIL.Image:
+def create_img(gif_object: Gif, image_data: list[str], width: int, height: int, create_images: bool) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
-    gif_size = current_image.width * current_image.height
-    assert gif_size == len(image_data), f"size mismatch: gif_size {gif_size} does not match the length of image_information {len(image_data)}"
+    image_size = current_image.width * current_image.height
+    assert image_size == len(image_data), f"size mismatch: gif_size {image_size} does not match the length of image_information {len(image_data)}"
 
-    if len(gif_object.images) > 1:
-        # create new image with -1
-        arr = [TRANSPARENT_VALUE] * gif_object.width * gif_object.height
-        start_current_image = current_image.top * gif_object.width + current_image.left
-           
-        # add the colors from the image data that we extract from lzw
-        rows = 0
-        for pos in range(0, len(image_data), width):
-            arr[start_current_image + rows: start_current_image + rows + width] = image_data[pos:pos + width]
-            rows += gif_object.width
-        pos = pos + width
-        #  complete the lats line - what is left from the image data
-        arr[start_current_image + rows: start_current_image + len(image_data) - pos] = image_data[pos:len(image_data)]
-        rows += gif_object.width
+    curr_top = current_image.top
+    curr_left = current_image.left
+    curr_width = current_image.width
+    curr_height = current_image.height
 
-        # for all the indexes that don't have value or transparent-value , we take the data from the last image
+    if len(gif_object.images) == 1:
+        if current_image.local_color_table_flag:
+            background_color = gif_object.local_color_tables[-1][gif_object.background_color_index]
+        else:
+            background_color = gif_object.global_color_table[gif_object.background_color_index]
+
+        new_img_data = [background_color] * gif_object.height * gif_object.width
+        last_width = gif_object.width
+
+    else:
         last_image = gif_object.images[PENULTIMATE]
-        current_image.image_data = (
-            [arr[i] if arr[i] != TRANSPARENT_VALUE else last_image.image_data[i] for i in range(len(arr))]
-        )
+        last_width = last_image.width
+        new_img_data = last_image.image_data
+
+        # fill all the TRANSPARENT_VALUE in the current Image with colors from last_image
+        for i in range(curr_height):
+            for j in range(curr_width):
+                if current_image.image_data[i * curr_width + j] == TRANSPARENT_VALUE:
+                    current_image.image_data[i * curr_width + j] = last_image.image_data[(i + curr_top) * last_width + j + curr_left]
+
+    # at first the new image data get the value of the last image. all of the overlap indexes getting the current
+    # image colors
+    pos = 0
+    for line in range(curr_top, curr_top + curr_height):
+        new_img_data[line * last_width + curr_left: line * last_width + curr_left + curr_width] = current_image.image_data[pos: pos + curr_width]
+        pos += curr_width
+
+    current_image.image_data = new_img_data
 
     img = Image_PIL.new('RGB', (gif_object.width, gif_object.height))
     rgb_array = ["#" + binascii.hexlify(b).decode('utf-8').upper() for b in current_image.image_data]
@@ -284,7 +298,8 @@ def create_img(gif_object: Gif, image_data: list[str], width: int, height: int) 
             hex_color = rgb_array[column * gif_object.width + row]
             r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
             pixels[row, column] = (r, g, b)
-    return img
+
+    current_image.img = img
 
 
 def decode_comment_extension(gif_stream: BitStreamReader, gif_object: Gif) -> None:
