@@ -55,12 +55,16 @@ def decode_gif(io: typing.BinaryIO) -> Gif:
 
             decode_image_data(gif_stream, gif_object)
 
-            if gif_object.graphic_control_extensions[
-                gif_object.images[LAST_ELEMENT].index_graphic_control_ex].disposal == 3:
+            last_graphic_control_index = gif_object.images[LAST_ELEMENT].index_graphic_control_ex
+            last_graphic_control_disposal = gif_object.graphic_control_extensions[last_graphic_control_index].disposal
+            if last_graphic_control_disposal == 3:
                 gif_object.images.append(gif_object.images[PENULTIMATE])
+            elif last_graphic_control_disposal == 2:
+                print("has disposal 2, need to check if correct")
+                background_frame(gif_object)
 
         elif prefix is BlockPrefix.NONE:
-            raise Exception("prefix is incorrect")
+            raise IncorrectFileFormat("prefix is incorrect")
 
     return gif_object
 
@@ -90,6 +94,26 @@ def decode_logical_screen_descriptor(gif_stream: BitStreamReader, gif_object: Gi
     pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
     gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
 
+def background_frame(gif_object: Gif):
+    prev_image = gif_object.images[-1]
+    current_image = Image()
+    current_image.index_graphic_control_ex = None
+
+    current_image.left = prev_image.left
+    current_image.top = prev_image.top
+    current_image.width = prev_image.width
+    current_image.height = prev_image.height
+
+    current_image.local_color_table_flag = False
+    current_image.interlace_flag = False
+    current_image.sort_flag = False
+    current_image.reserved = 0
+    current_image.size_of_local_color_table = 0
+
+    background_color: bytes = gif_object.global_color_table[gif_object.background_color_index]
+    current_image.image_data = [background_color] * prev_image.width * prev_image.height
+
+    gif_object.images.append(current_image)
 
 def decode_global_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     """
@@ -150,7 +174,10 @@ def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gi
 
 def decode_image_descriptor(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     current_image = Image()
-    current_image.index_graphic_control_ex = len(gif_object.graphic_control_extensions) - 1
+    if gif_object.graphic_control_extensions == []:
+        current_image.index_graphic_control_ex = None
+    else:
+        current_image.index_graphic_control_ex = len(gif_object.graphic_control_extensions) - 1
 
     current_image.left = gif_stream.read_unsigned_integer(2, 'bytes')
     current_image.top = gif_stream.read_unsigned_integer(2, 'bytes')
@@ -177,7 +204,6 @@ def decode_local_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> No
 
 
 def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif) -> None:
-    res = b''
     current_image = gif_object.images[LAST_ELEMENT]
     current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
 
