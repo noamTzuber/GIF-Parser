@@ -237,10 +237,10 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
             current_image.image_data.append(local_color_table[current_index])
         current_image.raw_data.append(local_color_table[current_index])
     if create_images:
-        create_img(gif_object, current_image.image_data, current_image.width, current_image.height, create_images)
+        create_img(gif_object, current_image.image_data)
 
 
-def create_img(gif_object: Gif, image_data: list[str], width: int, height: int, create_images: bool) -> Image_PIL.Image:
+def create_img(gif_object: Gif, image_data: list[str]) -> Image_PIL.Image:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     image_size = current_image.width * current_image.height
