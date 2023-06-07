@@ -48,9 +48,9 @@ def save_file(path: Path):
 
 def test_gifs(*, mode: Literal['save', 'check_read', 'check_write'], files: list[str] = None):
     if files or files == []:
-        path_list = [Path('gif_tests', str).with_suffix('.gif') for str in files]
+        path_list = [Path('../gif_tests', str).with_suffix('.gif') for str in files]
     else:
-        path_list = Path('gif_tests/').rglob('*.gif')
+        path_list = Path('../gif_tests/').rglob('*.gif')
 
     for path in path_list:
         if mode == 'check_read':

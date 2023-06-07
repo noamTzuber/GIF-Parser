@@ -1,11 +1,10 @@
-from decoder import decode_gif
-from gif_objects import Gif
-from writer import write_gif
+from parser import *
+from gif import Gif
 
 
 def main(filename: str, *, show_image: bool = False):
     with open(filename, "rb") as gif_file:
-        gif: Gif = decode_gif(gif_file)
+        gif: Gif = decode_gif(gif_file, True)
         print("decoded")
 
     if show_image:
@@ -14,10 +13,10 @@ def main(filename: str, *, show_image: bool = False):
             image.img.show()
 
     res = write_gif(gif)
-    with open("result2.gif", "wb") as f:
+    with open("result.gif", "wb") as f:
         res.to_file(f)
     print("saved")
 
 
 if __name__ == '__main__':
-    main("gif_tests/giphy2.gif", show_image=False)
+    main("gif_tests/giphy.gif", show_image=False)

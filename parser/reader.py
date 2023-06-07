@@ -6,10 +6,9 @@ import bitstring
 from PIL import Image as Image_PIL
 
 from BitStream import BitStreamReader
-from enums import BlockPrefix
-from gif_objects import Gif, GraphicControlExtension, Image, ApplicationExtension, PlainTextExtension, \
-    IncorrectFileFormat, CommentExtension
-from lzw import decode_lzw
+from .block_prefix import BlockPrefix
+from gif import *
+from lzw import lzw_decode
 
 LAST_ELEMENT = -1
 TRANSPARENT_VALUE = -1
@@ -97,7 +96,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStreamReader, gif_object: Gi
 
 def background_frame(gif_object: Gif):
     prev_image = gif_object.images[-1]
-    current_image = Image()
+    current_image = Frame()
     current_image.index_graphic_control_ex = None
 
     current_image.left = prev_image.left
@@ -174,7 +173,7 @@ def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gi
 
 
 def decode_image_descriptor(gif_stream: BitStreamReader, gif_object: Gif) -> None:
-    current_image = Image()
+    current_image = Frame()
     if gif_object.graphic_control_extensions == []:
         current_image.index_graphic_control_ex = None
     else:
@@ -215,15 +214,15 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
         current_image.img = None
         return
 
-    res, index_length = decode_lzw(compressed_sub_block, current_image.lzw_minimum_code_size)
-    
+    res, index_length = lzw_decode(compressed_sub_block, current_image.lzw_minimum_code_size)
+
     current_image.raw_indexes = compressed_sub_block
-    
+
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]
     else:
         local_color_table = gif_object.global_color_table
-    
+
     for pos in range(0, len(res), index_length):
         current_index = int((res[pos:pos + index_length]), 2)
 
@@ -240,7 +239,7 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
         create_img(gif_object, current_image.image_data)
 
 
-def create_img(gif_object: Gif, image_data: list[str]) -> Image_PIL.Image:
+def create_img(gif_object: Gif, image_data: list[bytes]) -> None:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     image_size = current_image.width * current_image.height
