@@ -15,7 +15,7 @@ TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
 
 
-def decode_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
+def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
     gif_object: Gif = Gif()
 
     gif_stream: BitStreamReader = BitStreamReader(bitstring.ConstBitStream(io))

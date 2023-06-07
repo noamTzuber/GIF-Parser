@@ -4,7 +4,7 @@ from gif import Gif
 
 def main(filename: str, *, show_image: bool = False):
     with open(filename, "rb") as gif_file:
-        gif: Gif = decode_gif(gif_file, True)
+        gif: Gif = read_gif(gif_file, True)
         print("decoded")
 
     if show_image:
