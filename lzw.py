@@ -22,11 +22,11 @@ def write_compressed_data(result: [str], code_size: int):
     return bytes(output, "utf-8")
 
 
-def convert_int_to_bits(number, code_size):
+def convert_int_to_bits(number: int, code_size: int):
     return bytes((bin(number)[2:]).zfill(code_size), 'utf-8')
 
 
-def initialize_code_table(color_table_size, is_decode):
+def initialize_code_table(color_table_size: int, is_decode: bool):
     # init table with dict, clear code and eof
     if is_decode:
         return {i: str(i) for i in range(color_table_size + 2)}
@@ -34,7 +34,7 @@ def initialize_code_table(color_table_size, is_decode):
         return {str(i): i for i in range(color_table_size + 2)}
 
 
-def update_code_size_encode(table_size, code_size):
+def update_code_size_encode(table_size: int, code_size: int):
     """
     check if we need to increase the writing window if the table size +1 is representing binary more than the
     current writing window size
@@ -47,7 +47,7 @@ def update_code_size_encode(table_size, code_size):
     return code_size
 
 
-def flip_data(compress_data):
+def flip_data(compress_data: bytes):
     """
     Flip the data by reversing the compressed data, looking at each element of size 8 bits.
 
@@ -59,7 +59,7 @@ def flip_data(compress_data):
     return b''.join(reversed_chunks)
 
 
-def get_encode_element(stream, reading_size):
+def get_encode_element(stream: ConstBitStream, reading_size: int):
     """
     the next element represent in as string number . the riding size in constant
     :param stream:
@@ -70,7 +70,7 @@ def get_encode_element(stream, reading_size):
     return str(element)
 
 
-def fill_zero_bytes(compress_data):
+def fill_zero_bytes(compress_data: bytes):
     """
     fill the data with zero in start that will divide by 8 - for hexa representing
     :param: compress_data:
@@ -81,40 +81,32 @@ def fill_zero_bytes(compress_data):
     return compress_data
 
 
-def bitstring_to_bytes(bitstr):
+def bitstring_to_bytes(bitstr: bytes):
     hex_str = binascii.hexlify(int(bitstr, 2).to_bytes((len(bitstr) + 7) // BYTE_LEN, 'big')).decode()
     return bytes.fromhex(hex_str)
 
 
-def get_decode_element(stream, reading_size) -> int:
+def get_decode_element(stream: ConstBitStream, reading_size: int) -> int:
     if stream.pos - reading_size < 0:
         reading_size = stream.pos
 
     stream.pos -= reading_size
-
     value: int = stream.read(f'uint{reading_size}')
     stream.pos -= reading_size
     return value
 
 
-def index_to_binary(element, writing_size):
+def index_to_binary(element: str, writing_size: int):
     return bytes(''.join([bin(int(val))[2:].zfill(writing_size) for val in element.split(',')]), 'utf-8')
 
 
-def fill_zero_hexa(hexa_data, binary_data_len):
-
-    while len(hexa_data[2:]) < binary_data_len / 4:
-        hexa_data = '0x0' + hexa_data[2:]
-    return hexa_data
-
-
-def update_code_size_decode(table_size, code_size):
+def update_code_size_decode(table_size: int, code_size: int):
     if table_size == int(math.pow(2, code_size)) and code_size < MAX_WRITING_SIZE:
         return code_size + 1
     return code_size
 
 
-def get_first_element(concats_colors):
+def get_first_element(concats_colors: str):
     comma_index = concats_colors.find(",")
     if comma_index != -1:
         result = concats_colors[:comma_index]
@@ -123,17 +115,19 @@ def get_first_element(concats_colors):
     return result
 
 
-def encode(uncompressed_data, color_table_size):
+def encode(uncompressed_data: BitArray, color_table_size: int):
     """
     using lzw algorithm for compress data ang gif images
     the table code look like this:
 
-    str   |  int
-    __|___
-      #0  |  0
-      #1  |  1
-      #2  |  2
-      #3  |  3
+
+        ______|______
+      '0'     |  0
+      '1'     |  1
+      '2'     |  2
+      '3'     |  3
+      ...
+      '0','0',| 298
 
     :param uncompressed_data:
     :param color_table_size:
@@ -209,16 +203,19 @@ def encode(uncompressed_data, color_table_size):
     return bitstring_to_bytes(flipped_data)
 
 
-def decode_lzw(compressed_data, lzw_minimum_code_size):
+def decode_lzw(compressed_data: bytes, lzw_minimum_code_size: int):
     """
     using lzw algorithm for compress data ang gif images
     the table code look like this:
     _____|______
-      0  |  #0
-      1  |  #1
-      2  |  #2
-      3  |  #3
-    """
+      0  |  '0'
+      1  |  '1'
+      2  |  '2'
+      3  |  '3'
+    ...
+     297 | '3','89'
+     """
+
     writing_size = lzw_minimum_code_size
     reading_size = writing_size + 1
     color_table_size = math.pow(2, lzw_minimum_code_size)
