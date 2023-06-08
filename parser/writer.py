@@ -27,7 +27,7 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
     write_header(gif_stream, gif_object)
     write_logical_screen_descriptor(gif_stream, gif_object)
 
-    if gif_object.global_color_table_size != 0:
+    if gif_object.global_color_table_size > 0:
         write_global_color_table(gif_stream, gif_object.global_color_table)
     for block in gif_object.structure:
         if isinstance(block, Frame):
@@ -60,7 +60,7 @@ def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif
     gif_stream.write_unsigned_integer(gif_object.height, 2, 'bytes')
 
     # if global color table exist
-    global_color_table_exist = gif_object.global_color_table_size != 0
+    global_color_table_exist = gif_object.global_color_table_size > 0
     gif_stream.write_bool(global_color_table_exist)
 
     # both not relevant
@@ -138,12 +138,9 @@ def write_image(gif_stream: BitStreamWriter, image: Frame, color_table:list[byte
 
     # Image Data
     gif_stream.write_unsigned_integer(int(math.ceil(math.log2(len(color_table)))), 1, 'bytes')
-    # TODO: need to change: get the data after the lzw algorithm presses.
-    data = index_from_data(image.raw_data, color_table)
-    # hex_string = ''.join(data)
 
+    data = index_from_data(image.raw_data, color_table)
     encoded = lzw_encode(data, len(color_table))
-    # encoded = image.raw_indexes
 
     if encoded:
         # looping in chunks of 255 bytes

@@ -13,16 +13,20 @@ BYTE_LEN = 8
 #       https://giflib.sourceforge.net/whatsinagif/lzw_image_data.html
 
 
-def convert_int_to_bits(number: int, code_size: int):
-    return bytes((bin(number)[2:]).zfill(code_size), 'utf-8')
-
-
-def initialize_code_table(color_table_size: int, is_decode: bool):
+def initialize_code_table(color_table_size: int) -> dict[str, int]:
     # init table with dict, clear code and eof
-    if is_decode:
-        return {i: str(i) for i in range(color_table_size + 2)}
-    else:
-        return {str(i): i for i in range(color_table_size + 2)}
+    return {str(i): i for i in range(color_table_size + 2)}
+
+
+def prepend_uint_to_bitarray(bit_array: BitArray, value: int, code_size: int):
+    """
+    insert value to bit_array at the start, padding to code size if needed
+    @param bit_array:
+    @param value:
+    @param code_size:
+    @return:
+    """
+    bit_array.prepend(f"uint:{code_size}={value}")
 
 
 def update_code_size_encode(table_size: int, code_size: int):
@@ -38,43 +42,15 @@ def update_code_size_encode(table_size: int, code_size: int):
     return code_size
 
 
-def flip_data(compress_data: bytes):
+def get_next_element(stream: ConstBitStream, reading_size: int):
     """
-    Flip the data by reversing the compressed data, looking at each element of size 8 bits.
-
-    :param compress_data: The compressed data as bytes
-    :return: Flipped data as bytes
-    """
-    chunks = [compress_data[i: i + BYTE_LEN] for i in range(0, len(compress_data), BYTE_LEN)]
-    reversed_chunks = chunks[::-1]
-    return b''.join(reversed_chunks)
-
-
-def get_encode_element(stream: ConstBitStream, reading_size: int):
-    """
-    the next element represent in as string number . the riding size in constant
+    the next element represent in as string number. the riding size is constant
     :param stream:
     :param reading_size:
     :return: element
     """
     element = stream.read(f"uint{reading_size}")
     return str(element)
-
-
-def fill_zero_bytes(compress_data: bytes):
-    """
-    fill the data with zero in start that will divide by 8 - for hexa representing
-    :param: compress_data:
-    :return: compress_data
-    """
-    if zero_fill := len(compress_data) % BYTE_LEN:
-        compress_data = convert_int_to_bits(0, BYTE_LEN - zero_fill) + compress_data
-    return compress_data
-
-
-def bitstring_to_bytes(bitstr: bytes):
-    hex_str = binascii.hexlify(int(bitstr, 2).to_bytes((len(bitstr) + 7) // BYTE_LEN, 'big')).decode()
-    return bytes.fromhex(hex_str)
 
 
 def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
@@ -106,7 +82,7 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
     # notice the reading size in constant - not change
     reading_size = math.ceil(math.log2(color_table_size)) + 1
 
-    table = initialize_code_table(color_table_size, False)
+    table = initialize_code_table(color_table_size)
 
     # if the next item in the table will need to be writen with more bit change now the writing size
     # because we're adding more indexes to the table, and now we need more bits to represent the numbers
@@ -119,16 +95,16 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
     compress_data = BitArray()
     #  add clear code according the reading size (in our example = 4)
 
-    compress_data.prepend(convert_int_to_bits(clear_code, writing_size))
+    prepend_uint_to_bitarray(compress_data, clear_code, writing_size)
 
     length = stream.length
 
     # the first item
-    curr_el = get_encode_element(stream, reading_size)
+    curr_el = get_next_element(stream, reading_size)
 
     while stream.pos != length:
         # reading the next item
-        next_el = get_encode_element(stream, reading_size)
+        next_el = get_next_element(stream, reading_size)
         current_and_next = curr_el + "," + next_el
 
         # if it is in the table continue
@@ -136,9 +112,9 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
             curr_el = current_and_next
         else:
             if len(table) == RESET_SIZE:
-                compress_data.prepend(convert_int_to_bits(table[curr_el], MAX_WRITING_SIZE))
-                compress_data.prepend(convert_int_to_bits(clear_code, MAX_WRITING_SIZE))
-                table = initialize_code_table(color_table_size, False)
+                prepend_uint_to_bitarray(compress_data, table[curr_el], MAX_WRITING_SIZE)
+                prepend_uint_to_bitarray(compress_data, clear_code, MAX_WRITING_SIZE)
+                table = initialize_code_table(color_table_size)
                 writing_size = update_code_size_encode(len(table), reading_size)
                 curr_el = next_el
                 continue
@@ -146,20 +122,21 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
                 # add the new concat to the table
             table[current_and_next] = len(table)
             # write the compressed value to the output
-            compress_data.prepend(convert_int_to_bits(table[curr_el], writing_size))
+            prepend_uint_to_bitarray(compress_data, table[curr_el], writing_size)
 
             # checking if to change the writing size
             writing_size = update_code_size_encode(len(table), writing_size)
             curr_el = next_el
 
     # add the last element to the output
+    prepend_uint_to_bitarray(compress_data, table[curr_el], writing_size)
 
-    compress_data.prepend(convert_int_to_bits(table[curr_el], writing_size))
     # add the end to the output - for inform that is the end ot the data
-    compress_data.prepend(convert_int_to_bits(end_of_information_code, writing_size))
+    prepend_uint_to_bitarray(compress_data, end_of_information_code, writing_size)
 
-    # flipped_data = flip_data_enc(fill_zero_bytes(compress_data).decode('utf-8'))
     # fill zeros to be represented by 8 bits and flip the data
-    flipped_data = flip_data(fill_zero_bytes(compress_data.bytes))
+    prepend_uint_to_bitarray(compress_data, 0, 8 - compress_data.length % 8)
 
-    return bitstring_to_bytes(flipped_data)
+    # reversing data (in place)
+    compress_data.byteswap()
+    return compress_data.bytes

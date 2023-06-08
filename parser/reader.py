@@ -24,7 +24,7 @@ def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
     decode_logical_screen_descriptor(gif_stream, gif_object)
 
     # There is no global color table if the size is 0.
-    if gif_object.global_color_table_size != 0:
+    if gif_object.global_color_table_size > 0:
         decode_global_color_table(gif_stream, gif_object)
 
     # Read the first byte to check if the next block is extension or image descriptor.
@@ -61,7 +61,7 @@ def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
                 gif_object.images.append(gif_object.images[PENULTIMATE])
             elif last_graphic_control_disposal == 2:
                 print("has disposal 2, need to check if correct")
-                background_frame(gif_object)
+                insert_background_frame(gif_object)
 
         elif prefix is BlockPrefix.NONE:
             raise IncorrectFileFormat("prefix is incorrect")
@@ -94,7 +94,8 @@ def decode_logical_screen_descriptor(gif_stream: BitStreamReader, gif_object: Gi
     pixel_ratio_value = gif_stream.read_unsigned_integer(1, 'bytes')
     gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
 
-def background_frame(gif_object: Gif):
+
+def insert_background_frame(gif_object: Gif):
     prev_image = gif_object.images[-1]
     current_image = Frame()
     current_image.index_graphic_control_ex = None
@@ -115,6 +116,7 @@ def background_frame(gif_object: Gif):
 
     gif_object.images.append(current_image)
 
+
 def decode_global_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> None:
     """
     Decode global color table.
@@ -130,7 +132,7 @@ def decode_application_extension(gif_stream: BitStreamReader, gif_object: Gif) -
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
     if block_size != 11:
-        raise IncorrectFileFormat(f'application extension block size should be 11 not {block_size}')
+        raise IncorrectFileFormat(f'application extension block size is {block_size}, and should be 11')
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
     app_ex.identify = gif_stream.read_bytes(3).decode("utf-8")
@@ -151,7 +153,7 @@ def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gi
     # always 4 bytes
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
     if block_size != 4:
-        raise IncorrectFileFormat(f'graphic control extension size should be 4 not {block_size}')
+        raise IncorrectFileFormat(f'graphic control extension size is {block_size}, but should be 4')
 
     # flags from Packed Fields
     graphic_control_ex.reserved = gif_stream.read_unsigned_integer(3, "bits")
@@ -243,7 +245,8 @@ def create_img(gif_object: Gif, image_data: list[bytes]) -> None:
     current_image = gif_object.images[LAST_ELEMENT]
     #  for all the images except the first
     image_size = current_image.width * current_image.height
-    assert image_size == len(image_data), f"size mismatch: gif_size {image_size} does not match the length of image_information {len(image_data)}"
+    assert image_size == len(
+        image_data), f"size mismatch: gif_size {image_size} does not match the length of image_information {len(image_data)}"
 
     curr_top = current_image.top
     curr_left = current_image.left
@@ -268,13 +271,16 @@ def create_img(gif_object: Gif, image_data: list[bytes]) -> None:
         for i in range(curr_height):
             for j in range(curr_width):
                 if current_image.image_data[i * curr_width + j] == TRANSPARENT_VALUE:
-                    current_image.image_data[i * curr_width + j] = last_image.image_data[(i + curr_top) * last_width + j + curr_left]
+                    current_image.image_data[i * curr_width + j] = last_image.image_data[
+                        (i + curr_top) * last_width + j + curr_left]
 
     # at first the new image data get the value of the last image. all of the overlap indexes getting the current
     # image colors
     pos = 0
     for line in range(curr_top, curr_top + curr_height):
-        new_img_data[line * last_width + curr_left: line * last_width + curr_left + curr_width] = current_image.image_data[pos: pos + curr_width]
+        new_img_data[
+        line * last_width + curr_left: line * last_width + curr_left + curr_width] = current_image.image_data[
+                                                                                     pos: pos + curr_width]
         pos += curr_width
 
     current_image.image_data = new_img_data
