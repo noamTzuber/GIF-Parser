@@ -110,17 +110,16 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
         # if it is in the table continue
         if current_and_next in table:
             curr_el = current_and_next
+        elif len(table) == RESET_SIZE:
+            prepend_uint_to_bitarray(compress_data, table[curr_el], MAX_WRITING_SIZE)
+            prepend_uint_to_bitarray(compress_data, clear_code, MAX_WRITING_SIZE)
+            table = initialize_code_table(color_table_size)
+            writing_size = update_code_size_encode(len(table), reading_size)
+            curr_el = next_el
         else:
-            if len(table) == RESET_SIZE:
-                prepend_uint_to_bitarray(compress_data, table[curr_el], MAX_WRITING_SIZE)
-                prepend_uint_to_bitarray(compress_data, clear_code, MAX_WRITING_SIZE)
-                table = initialize_code_table(color_table_size)
-                writing_size = update_code_size_encode(len(table), reading_size)
-                curr_el = next_el
-                continue
-
-                # add the new concat to the table
+            # add the new concat to the table
             table[current_and_next] = len(table)
+
             # write the compressed value to the output
             prepend_uint_to_bitarray(compress_data, table[curr_el], writing_size)
 
