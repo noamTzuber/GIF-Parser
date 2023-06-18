@@ -211,7 +211,7 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
     current_image = gif_object.images[LAST_ELEMENT]
     current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
 
-    assert (MINIMUM_LZW_CS <= current_image.lzw_minimum_code_size <= MAXIMUM_LZW_CS_LZW_CS
+    assert (MINIMUM_LZW_CS <= current_image.lzw_minimum_code_size <= MAXIMUM_LZW_CS
             ), f"lzw minimum code size is out of rage (should be between {MINIMUM_LZW_CS} to {MAXIMUM_LZW_CS})"
 
     compressed_sub_block = b''
