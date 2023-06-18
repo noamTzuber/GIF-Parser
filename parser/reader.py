@@ -13,6 +13,8 @@ from lzw import lzw_decode
 LAST_ELEMENT = -1
 TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
+MAXIMUM_LZW_CS = 12
+MINIMUM_LZW_CS = 2
 
 
 def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
@@ -208,6 +210,9 @@ def decode_local_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> No
 def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_images: bool) -> None:
     current_image = gif_object.images[LAST_ELEMENT]
     current_image.lzw_minimum_code_size = gif_stream.read_unsigned_integer(1, 'bytes')
+
+    assert (MINIMUM_LZW_CS <= current_image.lzw_minimum_code_size <= MINIMUM_LZW_CS
+            ), f"lzw minimum code size is out of rage (should be between {MINIMUM_LZW_CS} to {MAXIMUM_LZW_CS}"
 
     compressed_sub_block = b''
     while (number_of_sub_block_bytes := gif_stream.read_unsigned_integer(1, 'bytes')) != 0:

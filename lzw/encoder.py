@@ -29,7 +29,7 @@ def prepend_uint_to_bitarray(bit_array: BitArray, value: int, code_size: int):
     bit_array.prepend(f"uint:{code_size}={value}")
 
 
-def update_code_size_encode(table_size: int, code_size: int):
+def update_writing_size(table_size: int, code_size: int):
     """
     check if we need to increase the writing window if the table size +1 is representing binary more than the
     current writing window size
@@ -86,7 +86,7 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
 
     # if the next item in the table will need to be writen with more bit change now the writing size
     # because we're adding more indexes to the table, and now we need more bits to represent the numbers
-    writing_size = update_code_size_encode(len(table), reading_size)
+    writing_size = update_writing_size(len(table), reading_size)
 
     # add the start of reading (in our example = 4)
     clear_code = table[str(len(table) - 2)]
@@ -100,41 +100,41 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
     length = stream.length
 
     # the first item
-    curr_el = get_next_element(stream, reading_size)
+    previous_element = get_next_element(stream, reading_size)
 
     while stream.pos != length:
         # reading the next item
-        next_el = get_next_element(stream, reading_size)
-        current_and_next = curr_el + "," + next_el
+        current_element = get_next_element(stream, reading_size)
+        previous_and_current = previous_element + "," + current_element
 
         # if it is in the table continue
-        if current_and_next in table:
-            curr_el = current_and_next
+        if previous_and_current in table:
+            previous_element = previous_and_current
         elif len(table) == RESET_SIZE:
-            prepend_uint_to_bitarray(compress_data, table[curr_el], MAX_WRITING_SIZE)
+            prepend_uint_to_bitarray(compress_data, table[previous_element], MAX_WRITING_SIZE)
             prepend_uint_to_bitarray(compress_data, clear_code, MAX_WRITING_SIZE)
             table = initialize_code_table(color_table_size)
-            writing_size = update_code_size_encode(len(table), reading_size)
-            curr_el = next_el
+            writing_size = update_writing_size(len(table), reading_size)
+            previous_element = current_element
         else:
             # add the new concat to the table
-            table[current_and_next] = len(table)
+            table[previous_and_current] = len(table)
 
             # write the compressed value to the output
-            prepend_uint_to_bitarray(compress_data, table[curr_el], writing_size)
+            prepend_uint_to_bitarray(compress_data, table[previous_element], writing_size)
 
             # checking if to change the writing size
-            writing_size = update_code_size_encode(len(table), writing_size)
-            curr_el = next_el
+            writing_size = update_writing_size(len(table), writing_size)
+            previous_element = current_element
 
     # add the last element to the output
-    prepend_uint_to_bitarray(compress_data, table[curr_el], writing_size)
+    prepend_uint_to_bitarray(compress_data, table[previous_element], writing_size)
 
     # add the end to the output - for inform that is the end ot the data
     prepend_uint_to_bitarray(compress_data, end_of_information_code, writing_size)
 
     # fill zeros to be represented by 8 bits and flip the data
-    prepend_uint_to_bitarray(compress_data, 0, 8 - compress_data.length % 8)
+    prepend_uint_to_bitarray(compress_data, 0, BYTE_LEN - compress_data.length % BYTE_LEN)
 
     # reversing data (in place)
     compress_data.byteswap()

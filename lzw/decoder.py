@@ -34,7 +34,7 @@ def index_to_binary(element: str, writing_size: int):
     return bytes(''.join([bin(int(val))[2:].zfill(writing_size) for val in element.split(',')]), 'utf-8')
 
 
-def update_code_size_decode(table_size: int, code_size: int):
+def update_reading_size(table_size: int, code_size: int):
     if table_size == int(math.pow(2, code_size)) and code_size < MAX_WRITING_SIZE:
         return code_size + 1
     return code_size
@@ -63,10 +63,10 @@ def lzw_decode(compressed_data: bytes, lzw_minimum_code_size: int):
      """
 
     writing_size = lzw_minimum_code_size
-    reading_size = writing_size + 1
+    reading_size = lzw_minimum_code_size + 1
     color_table_size = int(math.pow(2, lzw_minimum_code_size))
     table = initialize_code_table(color_table_size)
-    reading_size = update_code_size_decode(len(table), reading_size)
+    reading_size = update_reading_size(len(table), reading_size)
 
     # add the start of reading
     clear_code = int(table[len(table) - 2])
@@ -79,33 +79,33 @@ def lzw_decode(compressed_data: bytes, lzw_minimum_code_size: int):
     decompressed_data = io.BytesIO()
 
     stream.pos = stream.length
-    curr_el = get_decode_element(stream, reading_size)
+    previous_element = get_decode_element(stream, reading_size)
     # if the gif start with clear_code we need continue to the next value
-    if curr_el == clear_code:
-        curr_el = get_decode_element(stream, reading_size)
+    if previous_element == clear_code:
+        previous_element = get_decode_element(stream, reading_size)
 
-    decompressed_data.write(index_to_binary(table[curr_el], writing_size))
+    decompressed_data.write(index_to_binary(table[previous_element], writing_size))
     while True:
-        next_el = get_decode_element(stream, reading_size)
-        if next_el == end_of_information_code:
+        current_element = get_decode_element(stream, reading_size)
+        if current_element == end_of_information_code:
             break
-        if next_el == clear_code:
+        if current_element == clear_code:
             table = initialize_code_table(color_table_size)
             reading_size = lzw_minimum_code_size + 1
-            curr_el = get_decode_element(stream, reading_size)
-            decompressed_data.write(index_to_binary(table[curr_el], writing_size))
+            previous_element = get_decode_element(stream, reading_size)
+            decompressed_data.write(index_to_binary(table[previous_element], writing_size))
 
             continue
 
-        if next_el in table:
-            k = get_first_element(table[next_el])
-            decompressed_data.write(index_to_binary(table[next_el], writing_size))
+        if current_element in table:
+            k = get_first_element(table[current_element])
+            decompressed_data.write(index_to_binary(table[current_element], writing_size))
         else:
-            k = get_first_element(table[curr_el])
-            decompressed_data.write(index_to_binary(table[curr_el] + "," + k, writing_size))
+            k = get_first_element(table[previous_element])
+            decompressed_data.write(index_to_binary(table[previous_element] + "," + k, writing_size))
 
-        table[len(table)] = table[curr_el] + "," + k
-        reading_size = update_code_size_decode(len(table), reading_size)
-        curr_el = next_el
+        table[len(table)] = table[previous_element] + "," + k
+        reading_size = update_reading_size(len(table), reading_size)
+        previous_element = current_element
 
     return decompressed_data.getvalue(), writing_size
