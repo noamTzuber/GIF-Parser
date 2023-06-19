@@ -15,6 +15,11 @@ TRANSPARENT_VALUE = -1
 PENULTIMATE = -2
 MAXIMUM_LZW_CS = 12
 MINIMUM_LZW_CS = 2
+DISPOSAL_OPTION_TWO = 2
+DISPOSAL_OPTION_THREE = 3
+APPLICATION_EXTENSION_BLOCK_SIZE = 11
+GRAPHIC_CONTROL_EXTENSION_BLOCK_SIZE = 4
+PLAIN_TEXT_EXTENSION_BLOCK_SIZE = 4
 
 
 def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
@@ -59,10 +64,9 @@ def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
 
             last_graphic_control_index = gif_object.images[LAST_ELEMENT].index_graphic_control_ex
             last_graphic_control_disposal = gif_object.graphic_control_extensions[last_graphic_control_index].disposal
-            if last_graphic_control_disposal == 3:
+            if last_graphic_control_disposal == DISPOSAL_OPTION_THREE:
                 gif_object.images.append(gif_object.images[PENULTIMATE])
-            elif last_graphic_control_disposal == 2:
-                print("has disposal 2, need to check if correct")
+            elif last_graphic_control_disposal == DISPOSAL_OPTION_TWO:
                 insert_background_frame(gif_object)
 
         elif prefix is BlockPrefix.NONE:
@@ -133,7 +137,7 @@ def decode_application_extension(gif_stream: BitStreamReader, gif_object: Gif) -
     app_ex = ApplicationExtension()
 
     block_size = gif_stream.read_unsigned_integer(1, 'bytes')
-    if block_size != 11:
+    if block_size != APPLICATION_EXTENSION_BLOCK_SIZE:
         raise IncorrectFileFormat(f'application extension block size is {block_size}, and should be 11')
 
     app_ex.application_name = gif_stream.read_bytes(8).decode("utf-8")
@@ -154,7 +158,7 @@ def decode_graphic_control_extension(gif_stream: BitStreamReader, gif_object: Gi
 
     # always 4 bytes
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
-    if block_size != 4:
+    if block_size != GRAPHIC_CONTROL_EXTENSION_BLOCK_SIZE:
         raise IncorrectFileFormat(f'graphic control extension size is {block_size}, but should be 4')
 
     # flags from Packed Fields
@@ -331,7 +335,7 @@ def decode_plain_text(gif_stream: BitStreamReader, gif_object: Gif) -> None:
 
     # Read the block size (always 12)
     block_size = gif_stream.read_unsigned_integer(1, "bytes")
-    if block_size != 12:
+    if block_size != PLAIN_TEXT_EXTENSION_BLOCK_SIZE:
         raise IncorrectFileFormat(f'plain text extension block size should be 12 not {block_size}')
 
     plain_text_ex.left = gif_stream.read_unsigned_integer(2, "bytes")

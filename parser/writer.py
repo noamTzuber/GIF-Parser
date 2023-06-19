@@ -8,9 +8,9 @@ from lzw import lzw_encode
 from utils import chunker
 from .block_prefix import BlockPrefix
 
-ApplicationExtensionBlockSize = 11
-GraphicControlExtensionBlockSize = 4
-PlainTextExtensionBlockSize = 4
+APPLICATION_EXTENSION_BLOCK_SIZE = 11
+GRAPHIC_CONTROL_EXTENSION_BLOCK_SIZE = 4
+PLAIN_TEXT_EXTENSION_BLOCK_SIZE = 4
 
 
 def index_from_data(image_data, color_table):
@@ -86,7 +86,7 @@ def write_global_color_table(gif_stream: BitStreamWriter, global_color_table: li
 def write_application_extension(gif_stream: BitStreamWriter, application_ex: ApplicationExtension) -> None:
     gif_stream.write_bytes(BlockPrefix.Extension.value)
     gif_stream.write_bytes(BlockPrefix.ApplicationExtension.value)
-    gif_stream.write_unsigned_integer(ApplicationExtensionBlockSize, 1, 'bytes')
+    gif_stream.write_unsigned_integer(APPLICATION_EXTENSION_BLOCK_SIZE, 1, 'bytes')
 
     gif_stream.write_bytes(application_ex.application_name.encode())
     gif_stream.write_bytes(application_ex.identify.encode())
@@ -104,7 +104,7 @@ def write_graphic_control_extension(gif_stream: BitStreamWriter, graphic_control
     gif_stream.write_bytes(BlockPrefix.Extension.value)
     gif_stream.write_bytes(BlockPrefix.GraphicControlExtension.value)
 
-    gif_stream.write_unsigned_integer(GraphicControlExtensionBlockSize, 1, 'bytes')
+    gif_stream.write_unsigned_integer(GRAPHIC_CONTROL_EXTENSION_BLOCK_SIZE, 1, 'bytes')
 
     # write package
     gif_stream.write_unsigned_integer(graphic_control_ex.reserved, 3, 'bits')
@@ -169,7 +169,7 @@ def write_plain_text(gif_stream: BitStreamWriter, plain_text: PlainTextExtension
     gif_stream.write_bytes(BlockPrefix.Extension.value)
     gif_stream.write_bytes(BlockPrefix.PlainTextExtension.value)
 
-    gif_stream.write_unsigned_integer(PlainTextExtensionBlockSize, 1, 'bytes')
+    gif_stream.write_unsigned_integer(PLAIN_TEXT_EXTENSION_BLOCK_SIZE, 1, 'bytes')
     gif_stream.write_unsigned_integer(plain_text.left, 2, 'bytes')
     gif_stream.write_unsigned_integer(plain_text.top, 2, 'bytes')
     gif_stream.write_unsigned_integer(plain_text.width, 2, 'bytes')
