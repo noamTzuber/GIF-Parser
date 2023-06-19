@@ -21,7 +21,7 @@ def index_from_data(image_data, color_table):
     return data
 
 
-def write_gif(gif_object: Gif) -> BitStreamWriter:
+def write_gif(gif_object: Gif, max_clean: bool) -> BitStreamWriter:
     gif_stream = BitStreamWriter()
 
     write_header(gif_stream, gif_object)
@@ -36,7 +36,9 @@ def write_gif(gif_object: Gif) -> BitStreamWriter:
             else:
                 write_image(gif_stream, block, gif_object.global_color_table)
         elif isinstance(block, CommentExtension):
-            write_comment_extension(gif_stream, block)
+            # not write comment block if max clean is true
+            if not max_clean:
+                write_comment_extension(gif_stream, block)
         elif isinstance(block, PlainTextExtension):
             write_plain_text(gif_stream, block)
         elif isinstance(block, GraphicControlExtension):
