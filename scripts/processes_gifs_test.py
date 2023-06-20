@@ -1,5 +1,5 @@
 import os
-from parser import read_gif, write_gif
+from reader_writer import read_gif, write_gif
 from gif import Gif
 
 

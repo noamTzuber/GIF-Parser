@@ -6,9 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/Test_gifs" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gif" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lzw" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/parser" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/preformance_tests" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/scripts" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/reader_writer" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/.mypy_cache" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />

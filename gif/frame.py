@@ -8,8 +8,6 @@ from attrs import define, field
 class Frame:
     image_data: list[bytes] = field(factory=list, repr=False)
     raw_data: list[bytes] = field(factory=list, repr=False)
-    raw_indexes: bytes = field(factory=bytes, repr=False)
-    image_indexes: list[typing.Any] = field(factory=list, repr=False)
 
     top: int = field(default=None)
     left: int = field(default=None)

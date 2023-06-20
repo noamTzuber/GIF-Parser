@@ -149,7 +149,7 @@ def decode_application_extension(gif_stream: BitStreamReader, gif_object: Gif) -
         application_data += sub_block
 
     app_ex.data = application_data
-    gif_object.add_application_extension(app_ex)
+    gif_object.applications_extensions.append(app_ex)
     gif_object.structure.append(app_ex)
 
 
@@ -226,8 +226,6 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
         return
 
     res, index_length = lzw_decode(compressed_sub_block, current_image.lzw_minimum_code_size)
-
-    current_image.raw_indexes = compressed_sub_block
 
     if current_image.local_color_table_flag:
         local_color_table = gif_object.local_color_tables[LAST_ELEMENT]

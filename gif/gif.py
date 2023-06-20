@@ -29,6 +29,3 @@ class Gif:
     global_color_table: list[bytes] = field(default=None, repr=False)
     background_color_index: int = field(default=None)
     pixel_aspect_ratio: float = field(default=None)
-
-    def add_application_extension(self, extension):
-        self.applications_extensions.append(extension)
