@@ -1,3 +1,4 @@
+from constants import *
 from reader_writer import read_gif, write_gif
 from gif import Gif
 
@@ -9,7 +10,7 @@ def main(filename: str, *, show_image: bool = False, max_clean: bool = False):
 
     if show_image:
         print("showing images (first 5)")
-        for image in gif.images[:5]:
+        for image in gif.images[:NUMBER_OF_IMAGE_TO_SHOW]:
             image.img.show()
 
     res = write_gif(gif, max_clean)
