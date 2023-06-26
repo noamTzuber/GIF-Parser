@@ -1,21 +1,11 @@
-import binascii
 import math
-
+from reader_writer.constants import *
 from bitstring import BitArray, ConstBitStream
-
-RESET_SIZE = 4096
-MAX_WRITING_SIZE = 12
-BYTE_LEN = 8
-
-
-# the example we using here:
-#       https://giflib.sourceforge.net/whatsinagif/bits_and_bytes.html
-#       https://giflib.sourceforge.net/whatsinagif/lzw_image_data.html
 
 
 def initialize_code_table(color_table_size: int) -> dict[str, int]:
     # init table with dict, clear code and eof
-    return {str(i): i for i in range(color_table_size + 2)}
+    return {str(i): i for i in range(color_table_size + EOI_AND_CC)}
 
 
 def prepend_uint_to_bitarray(bit_array: BitArray, value: int, code_size: int):
@@ -89,7 +79,7 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
     writing_size = update_writing_size(len(table), reading_size)
 
     # add the start of reading (in our example = 4)
-    clear_code = table[str(len(table) - 2)]
+    clear_code = table[str(len(table) - EOI_AND_CC)]
     #  add the enf of reading (in our example = 5)
     end_of_information_code = table[str(len(table) - 1)]
     compress_data = BitArray()
@@ -134,7 +124,7 @@ def lzw_encode(uncompressed_data: BitArray, color_table_size: int):
     prepend_uint_to_bitarray(compress_data, end_of_information_code, writing_size)
 
     # fill zeros to be represented by 8 bits and flip the data
-    prepend_uint_to_bitarray(compress_data, 0, BYTE_LEN - compress_data.length % BYTE_LEN)
+    prepend_uint_to_bitarray(compress_data, ZERO, BYTE_LEN - compress_data.length % BYTE_LEN)
 
     # reversing data (in place)
     compress_data.byteswap()

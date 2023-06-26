@@ -6,10 +6,13 @@ import bitstring
 from PIL import Image as Image_PIL
 
 from BitStream import BitStreamReader
-from constants import *
+from reader_writer.constants import *
+
 from gif import *
 from lzw import lzw_decode
 from .block_prefix import BlockPrefix
+
+
 
 
 def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
@@ -301,7 +304,10 @@ def create_img(gif_object: Gif, image_data: list[bytes]) -> None:
     for row in range(gif_object.width):
         for column in range(gif_object.height):
             hex_color = rgb_array[column * gif_object.width + row]
-            r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+            r, g, b = (
+                int(hex_color[R_START:R_END], HEX_SIZE), int(hex_color[G_START:G_END], HEX_SIZE),
+                int(hex_color[B_START:B_END], HEX_SIZE)
+            )
             pixels[row, column] = (r, g, b)
     current_image.img = img
 

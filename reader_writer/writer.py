@@ -1,9 +1,7 @@
 import math
-
 import bitstring
-
 from BitStream import BitStreamWriter
-from constants import *
+from reader_writer.constants import *
 from gif import *
 from lzw import lzw_encode
 from utils import chunker

@@ -1,4 +1,4 @@
-from constants import *
+from reader_writer.constants import *
 from reader_writer import read_gif, write_gif
 from gif import Gif
 

@@ -2,12 +2,8 @@ import io
 import math
 
 from bitstring import ConstBitStream
+from reader_writer.constants import *
 
-MAX_WRITING_SIZE = 12
-
-# the example we using here:
-#       https://giflib.sourceforge.net/whatsinagif/bits_and_bytes.html
-#       https://giflib.sourceforge.net/whatsinagif/lzw_image_data.html
 
 def initialize_code_table(color_table_size: int) -> dict[int,str]:
     """
@@ -17,7 +13,7 @@ def initialize_code_table(color_table_size: int) -> dict[int,str]:
     """
 
     # init table with dict, clear code and eof
-    return {i: str(i) for i in range(color_table_size + 2)}
+    return {i: str(i) for i in range(color_table_size + EOI_AND_CC)}
 
 
 def get_decode_element(stream: ConstBitStream, reading_size: int) -> int:
@@ -31,7 +27,8 @@ def get_decode_element(stream: ConstBitStream, reading_size: int) -> int:
 
 
 def index_to_binary(element: str, writing_size: int):
-    return bytes(''.join([bin(int(val))[2:].zfill(writing_size) for val in element.split(',')]), 'utf-8')
+    return bytes(''.join([bin(int(val))[BINARY_HEADER_LEN:].zfill(writing_size)
+                          for val in element.split(',')]), 'utf-8')
 
 
 def update_reading_size(table_size: int, code_size: int):
@@ -40,12 +37,12 @@ def update_reading_size(table_size: int, code_size: int):
     return code_size
 
 
-def get_first_element(concats_colors: str):
-    comma_index = concats_colors.find(",")
+def get_first_element(concat_colors: str):
+    comma_index = concat_colors.find(",")
     if comma_index != -1:
-        result = concats_colors[:comma_index]
+        result = concat_colors[:comma_index]
     else:
-        result = concats_colors
+        result = concat_colors
     return result
 
 
@@ -69,7 +66,7 @@ def lzw_decode(compressed_data: bytes, lzw_minimum_code_size: int):
     reading_size = update_reading_size(len(table), reading_size)
 
     # add the start of reading
-    clear_code = int(table[len(table) - 2])
+    clear_code = int(table[len(table) - EOI_AND_CC])
 
     #  add the enf of reading
     end_of_information_code = int(table[(len(table) - 1)])
