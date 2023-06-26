@@ -89,7 +89,7 @@ def decode_logical_screen_descriptor(gif_stream: BitStreamReader, gif_object: Gi
     gif_object.background_color_index = gif_stream.read_unsigned_integer(GIF_BACKGROUND_COLOR_INDEX_LEN_BYTE, 'bytes')
 
     pixel_ratio_value = gif_stream.read_unsigned_integer(GIF_PIXEL_RATIO_VALUE_LEN_BYTE, 'bytes')
-    gif_object.pixel_aspect_ratio = (pixel_ratio_value + 15) / 64
+    gif_object.pixel_aspect_ratio = (pixel_ratio_value + WIDER_RANGE_RATIO) / NORMALIZED_VALUE
 
 
 def insert_background_frame(gif_object: Gif):

@@ -72,7 +72,7 @@ def write_logical_screen_descriptor(gif_stream: BitStreamWriter, gif_object: Gif
 
     gif_stream.write_unsigned_integer(gif_object.background_color_index, GIF_BACKGROUND_COLOR_INDEX_LEN_BYTE, 'bytes')
 
-    pixel_ratio_value = int(gif_object.pixel_aspect_ratio * 64 - 15)
+    pixel_ratio_value = int(gif_object.pixel_aspect_ratio * NORMALIZED_VALUE - WIDER_RANGE_RATIO)
     gif_stream.write_unsigned_integer(pixel_ratio_value, GIF_PIXEL_RATIO_VALUE_LEN_BYTE, 'bytes')
 
 
