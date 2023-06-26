@@ -13,8 +13,6 @@ from lzw import lzw_decode
 from .block_prefix import BlockPrefix
 
 
-
-
 def read_gif(io: typing.BinaryIO, create_images: bool) -> Gif:
     gif_object: Gif = Gif()
 

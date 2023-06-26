@@ -5,7 +5,7 @@ from bitstring import ConstBitStream
 from reader_writer.constants import *
 
 
-def initialize_code_table(color_table_size: int) -> dict[int,str]:
+def initialize_code_table(color_table_size: int) -> dict[int, str]:
     """
     init dict which keys are int from 0 to size.
     @param color_table_size: size of color table
