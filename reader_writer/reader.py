@@ -200,7 +200,7 @@ def decode_local_color_table(gif_stream: BitStreamReader, gif_object: Gif) -> No
     current_image = gif_object.images[LAST_ELEMENT]
     size_of_color_table = math.pow(2, current_image.size_of_local_color_table + 1)
 
-    colors_array = [gif_stream.read_bytes(RGB_LEN_BYTE=3) for _ in range(int(size_of_color_table))]
+    colors_array = [gif_stream.read_bytes(RGB_LEN_BYTE) for _ in range(int(size_of_color_table))]
     gif_object.local_color_tables.append(colors_array)
     current_image.local_color_table = colors_array
 
@@ -231,11 +231,9 @@ def decode_image_data(gif_stream: BitStreamReader, gif_object: Gif, create_image
 
         if (current_index == gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_index and
                 gif_object.graphic_control_extensions[LAST_ELEMENT].transparent_color_flag):
-            # current_image.image_indexes.append(gif_object.images[-2].image_indexes[int(pos / index_length)])
             # if the index it transparent we put -1 and in the future we will change it to correct color
             current_image.image_data.append(TRANSPARENT_VALUE)
         else:
-            # current_image.image_indexes.append(current_index)
             current_image.image_data.append(local_color_table[current_index])
         current_image.raw_data.append(local_color_table[current_index])
     if create_images:
