@@ -1,6 +1,6 @@
 # GifParser
 ### Contributors
-This project was made by [Noam Tzuberi](https://github.com/noamTzuber) and [Itay Shwartz](https://github.com/itayshwartz1) .
+This project was made by Noam tzuberi, Itay shwartz, Noam cohen and shaked cohen.
 
 ### Report
 [link to report](https://docs.google.com/document/d/1UL3KFr1pANn2Tplf4sBbhdReTbgQlSWqy_8c2gtwwuM/edit?usp=sharing)
